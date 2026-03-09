@@ -1,0 +1,17 @@
+[project]
+name = "leaf"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.3",
+    "plotly>=6.6.0",
+    "pygame>=2.6.1",
+    "pyopengl>=3.1.10",
+    "pyopengl-accelerate>=3.1.10",
+    "pyrr>=0.10.3",
+    "scipy>=1.17.1",
+    "setuptools>=82.0.0",
+]
