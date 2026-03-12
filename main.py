@@ -254,7 +254,7 @@ def main():
     # --- main loop  -----------------------------------------------------
     running = True
     while running:
-
+ 
         dt = clock_obj.tick(0) / 1000.0
         dt = min(dt, 0.05)
         t  = clock.get_time()
@@ -284,15 +284,22 @@ def main():
 
                 elif event.key == K_LEFT:
                     clock.step_frames(-1)
+                
+                elif event.key == K_r:
+                    clock.reset()
 
             elif event.type == MOUSEMOTION and mouse_captured:
                 dx, dy = event.rel
                 camera.process_mouse(float(dx), float(dy))
 
+
         # only move camera when not paused / scrubbing
         if not clock.is_paused():
             keys = pygame.key.get_pressed()
             camera.process_keyboard(keys, dt)
+        # Move camera independently of simulation pause state
+        keys = pygame.key.get_pressed()
+        camera.process_keyboard(keys, dt)
 
         model = compute_leaf_model_matrix(t)
         view  = camera.get_view_matrix()
