@@ -12,7 +12,7 @@ def lerp(t0, t1, a, b, t):
     out = a + (b - a) * progress
     return out
 
-class FileReader:
+class DiscTransformPredictor:
     def __init__(self, path):
         self.path = path
         self.df = None
@@ -31,8 +31,43 @@ class FileReader:
             print("Error: This appears to be a MATLAB v7.3+ file. Use 'h5py' instead.")
         except Exception as e:
             print(f"An error occurred while loading the file: {e}")
+        
+        # populate the basecase
+        self.xs = [0]
+        self.zs = [10] # this will probably change later
+        self.phis = [0]
+        self.n_i = 1
+        self.frametime = 1 / 60
+        self.steps_per_frametime = 10
+
+    def t(self, i):
+        return i * self.frametime
     
+    def integrate_column(self, column, t0, t1, n):
+        dt = (t1 - t0) / n
+        t_current = t0
+
+        acc = 0
+        for _ in range(n):
+            # todo, can use a better verlet algorithm here.
+            acc += self.column_at_t(t_current, column) * dt
+            t_current += dt
+        
+        return acc
+
+    def x(self, i):
+        if i < self.n_i:
+            return self.xs[i]
+        if i >= self.n_i:
+            res = self.x(i - 1) + self.integrate_column('ux', self.t(i - 1), self.t(i), self.steps_per_frametime)
+            self.xs.append(res)
+            self.n_i += 1
+            return res
+        
     def column_at_t(self, t, column):
+        # print(self, t, column)
+        # print(self.df)
+        # print(self.df['t'])
         length = len(self.df['t'])
         assert length >= 2, "Lazy algorithm 2 or greater length"
         i_L = 0
@@ -74,7 +109,7 @@ class TestFileReader(unittest.TestCase):
         mock_data = {
             't': np.array([0.0, 0.1, 0.2, 0.3, 0.4, 0.5]),
             'sensor_x': np.array([[10], [12], [11], [15], [14], [13]]), # MATLAB 2D column
-            'sensor_y': np.array([1, 2, 3, 4, 5, 6])                    # Standard 1D array
+            'ux': np.array([1, 2, 3, 4, 5, 6])                    # Standard 1D array
         }
         sio.savemat(cls.test_filepath, mock_data)
 
@@ -86,7 +121,7 @@ class TestFileReader(unittest.TestCase):
 
     def test_dataframe_creation_and_print(self):
         """Test that the DataFrame loads and print it to the console."""
-        reader = FileReader(self.test_filepath)
+        reader = DiscTransformPredictor(self.test_filepath)
         
         # Check that it actually created a DataFrame
         self.assertIsNotNone(reader.df, "DataFrame failed to load and is None")
@@ -99,7 +134,7 @@ class TestFileReader(unittest.TestCase):
 
     def test_data_shape_and_squeezing(self):
         """Test that MATLAB's (N,1) arrays are properly flattened to (N,) for Pandas."""
-        reader = FileReader(self.test_filepath)
+        reader = DiscTransformPredictor(self.test_filepath)
 
         # Verify columns exist
         expected_columns = ['time', 'sensor_x', 'sensor_y']
@@ -114,18 +149,24 @@ class TestFileReader(unittest.TestCase):
 
     def test_invalid_file_handling(self):
         """Test how the class handles a missing file."""
-        reader = FileReader("some_non_existent_file.mat")
+        reader = DiscTransformPredictor("some_non_existent_file.mat")
         
         # Based on our current __init__, if it fails, df remains None
         self.assertIsNone(reader.df, "df should remain None if file is not found")
+    
+    def test_integrator(self):
+        reader = DiscTransformPredictor(self.test_filepath)
+        res = reader.x(6)
+        print(reader.xs)
+        self.assertEqual(res, 1.5)
 
     def test_intervals(self):
-        reader = FileReader(self.test_filepath)
+        reader = DiscTransformPredictor(self.test_filepath)
 
-        self.assertAlmostEqual(reader.column_at_t(0.05, 'sensor_y'), 1.5)
+        self.assertAlmostEqual(reader.column_at_t(0.05, 'ux'), 1.5)
 
     def test_i_can_read_data(self):
-        reader = FileReader("data_m01_G90.mat")
+        reader = DiscTransformPredictor("data_m01_G90.mat")
         import matplotlib.pyplot as py
         py.plot(reader.df['t'], reader.df['ux'])
         py.show()
@@ -136,6 +177,7 @@ if __name__ == '__main__':
     # unittest.main(verbosity=2)
     suite = unittest.TestSuite()
     suite.addTest(TestFileReader("test_intervals"))
+    suite.addTest(TestFileReader("test_integrator"))
     
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
