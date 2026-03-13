@@ -43,6 +43,10 @@ LIGHT_COLOR        = np.array([ 1.0,  1.0,  1.0], dtype=np.float32)
 COLOR_FRONT = np.array([0.2, 0.7, 0.15], dtype=np.float32)
 COLOR_BACK  = np.array([0.8, 0.75, 0.1], dtype=np.float32)
 
+from data_wrangler import DiscTransformPredictor
+disc_transform_predictor_1 = DiscTransformPredictor('data_m01_G90.mat')
+i_x = 0
+
 # ---------------------------------------------------------------------------
 # Shader helpers
 # ---------------------------------------------------------------------------
@@ -185,8 +189,12 @@ def compute_leaf_model_matrix(t: float) -> np.ndarray:
     alpha  = cycle / FALL_DURATION
     y      = LEAF_START_Y + alpha * (LEAF_END_Y - LEAF_START_Y)
 
+    global i_x
+    x = disc_transform_predictor_1.x(i_x)
+    i_x += 1
+
     translation = pyrr.matrix44.create_from_translation(
-        pyrr.Vector3([LEAF_X, y, LEAF_Z]), dtype=np.float32)
+        pyrr.Vector3([x, y, LEAF_Z]), dtype=np.float32)
 
     angle = math.sin(2.0 * math.pi * t)
     rx    = pyrr.matrix44.create_from_x_rotation(angle, dtype=np.float32)

@@ -26,6 +26,10 @@ class DiscTransformPredictor:
                     data_dict[key] = np.squeeze(value)
             
             self.df = pd.DataFrame(data_dict)
+
+            match path:
+                case "data_m01_G90.mat":
+                    self.df.t -= 2.478290000000000e+02 # zero out the time
             
         except NotImplementedError:
             print("Error: This appears to be a MATLAB v7.3+ file. Use 'h5py' instead.")
@@ -76,7 +80,11 @@ class DiscTransformPredictor:
         i_interval_begin = -999
         i_interval_end = -999
 
-        while not i_L > i_R:
+        i_debug_count = 0
+        while i_L != i_R:
+            i_debug_count += 1
+            if i_debug_count % 100 == 0:
+                print(f'still binary searching jumps: {i_debug_count}, i_L: {i_L}, i_R: {i_R}')
             i_test = i_L + (i_R - i_L) // 2
             if t >= self.df['t'][i_test] and t <= self.df['t'][i_test + 1]:
                 i_interval_begin = i_test
@@ -91,7 +99,7 @@ class DiscTransformPredictor:
                 i_R = i_test
                 continue
         
-        assert not (i_L > i_R), f"Big error occurred: no matching interval for given t {t}"
+        assert not (i_interval_begin == -999), f"Big error occurred: no matching interval for given t {t}"
         
         res = lerp(self.df['t'][i_interval_begin], self.df['t'][i_interval_end], self.df[column][i_interval_begin], self.df[column][i_interval_end], t)
         return res
