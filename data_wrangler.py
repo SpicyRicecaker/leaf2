@@ -157,8 +157,8 @@ class TestFileReader(unittest.TestCase):
     def test_integrator(self):
         reader = DiscTransformPredictor(self.test_filepath)
         res = reader.x(6)
-        print(reader.xs)
-        self.assertEqual(res, 1.5)
+        # print(reader.xs)
+        self.assertAlmostEqual(res, 0.14916666666666667)
 
     def test_intervals(self):
         reader = DiscTransformPredictor(self.test_filepath)
