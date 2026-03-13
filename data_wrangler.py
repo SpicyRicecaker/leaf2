@@ -55,9 +55,8 @@ class FileReader:
             if t < self.df['t'][i_test]:
                 i_R = i_test
                 continue
-
-        if i_L > i_R:
-            print(f"Big error occurred: no matching interval for given t {t}")
+        
+        assert not (i_L > i_R), f"Big error occurred: no matching interval for given t {t}"
         
         res = lerp(self.df['t'][i_interval_begin], self.df['t'][i_interval_end], self.df[column][i_interval_begin], self.df[column][i_interval_end], t)
         return res
