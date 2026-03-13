@@ -16,6 +16,7 @@ from graph import RealtimeGraph
 from shared_clock import SharedClock
 from framebar import FrameBar
 
+from data_wrangler import DiscTransformPredictor
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -42,10 +43,6 @@ LIGHT_COLOR        = np.array([ 1.0,  1.0,  1.0], dtype=np.float32)
 
 COLOR_FRONT = np.array([0.2, 0.7, 0.15], dtype=np.float32)
 COLOR_BACK  = np.array([0.8, 0.75, 0.1], dtype=np.float32)
-
-from data_wrangler import DiscTransformPredictor
-disc_transform_predictor_1 = DiscTransformPredictor('data_m01_G90.mat')
-i_x = 0
 
 # ---------------------------------------------------------------------------
 # Shader helpers
@@ -184,14 +181,12 @@ class Camera:
 # Leaf transform
 # ---------------------------------------------------------------------------
 
-def compute_leaf_model_matrix(t: float) -> np.ndarray:
+def compute_leaf_model_matrix(t: float, predictor, i) -> np.ndarray:
     cycle  = t % FALL_DURATION
     alpha  = cycle / FALL_DURATION
     y      = LEAF_START_Y + alpha * (LEAF_END_Y - LEAF_START_Y)
 
-    global i_x
-    x = disc_transform_predictor_1.x(i_x)
-    i_x += 1
+    x = predictor.x(i)
 
     translation = pyrr.matrix44.create_from_translation(
         pyrr.Vector3([x, y, LEAF_Z]), dtype=np.float32)
@@ -258,13 +253,15 @@ def main():
     # --- state  ---------------------------------------------------------
     mouse_captured = False
     clock_obj      = pygame.time.Clock()
+    disc_transform_predictor_1 = DiscTransformPredictor('data_m01_G90.mat', 1 / 60)
+    i_x = 0
 
     # --- main loop  -----------------------------------------------------
     running = True
     while running:
  
-        dt = clock_obj.tick(0) / 1000.0
-        dt = min(dt, 0.05)
+        dt = clock_obj.tick(60) / 1000.0
+        # dt = min(dt, 0.05)
         t  = clock.get_time()
 
         for event in pygame.event.get():
@@ -309,7 +306,7 @@ def main():
         keys = pygame.key.get_pressed()
         camera.process_keyboard(keys, dt)
 
-        model = compute_leaf_model_matrix(t)
+        model = compute_leaf_model_matrix(t, disc_transform_predictor_1, i_x)
         view  = camera.get_view_matrix()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -325,6 +322,9 @@ def main():
         glBindVertexArray(vao)
         glDrawArrays(GL_TRIANGLES, 0, vertex_count)
         glBindVertexArray(0)
+
+        # update state
+        i_x += 1
 
         pygame.display.flip()
 

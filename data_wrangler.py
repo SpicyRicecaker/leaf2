@@ -13,7 +13,7 @@ def lerp(t0, t1, a, b, t):
     return out
 
 class DiscTransformPredictor:
-    def __init__(self, path):
+    def __init__(self, path, frametime):
         self.path = path
         self.df = None
         
@@ -41,7 +41,7 @@ class DiscTransformPredictor:
         self.zs = [10] # this will probably change later
         self.phis = [0]
         self.n_i = 1
-        self.frametime = 1 / 60
+        self.frametime = frametime
         self.steps_per_frametime = 10
 
     def t(self, i):
@@ -92,7 +92,7 @@ class DiscTransformPredictor:
                 break
             # if we are to the right of the interval
             if t > self.df['t'][i_test + 1]:
-                i_L = i_test
+                i_L = i_test + 1
                 continue
             # if we are to the left of the interval
             if t < self.df['t'][i_test]:
