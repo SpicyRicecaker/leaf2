@@ -16,6 +16,7 @@ class DiscTransformPredictor:
     def __init__(self, path, frametime):
         self.path = path
         self.df = None
+        self.phi_0 = 0
         
         try:
             mat_dict = sio.loadmat(path)
@@ -30,6 +31,7 @@ class DiscTransformPredictor:
             match path:
                 case "data_m01_G90.mat":
                     self.df.t -= 2.478290000000000e+02 # zero out the time
+                    self.phi_0 = np.asin(self.df.xax[0])
             
         except NotImplementedError:
             print("Error: This appears to be a MATLAB v7.3+ file. Use 'h5py' instead.")
@@ -39,9 +41,10 @@ class DiscTransformPredictor:
         # populate the basecase
         self.xs = [0]
         self.zs = [4] # this will probably change later
-        self.phis = [0]
+        self.phis = [self.phi_0]
         self.n_x = 1
         self.n_z = 1
+        self.n_phi = 1
         self.frametime = frametime
         self.steps_per_frametime = 10
 
@@ -76,6 +79,15 @@ class DiscTransformPredictor:
             res = self.z(i - 1) + self.integrate_column('uz', self.t(i - 1), self.t(i), self.steps_per_frametime)
             self.zs.append(res)
             self.n_z += 1
+            return res
+
+    def phi(self, i):
+        if i < self.n_phi:
+            return self.phis[i]
+        if i >= self.n_phi:
+            res = self.phi(i - 1) + self.integrate_column('omy', self.t(i - 1), self.t(i), self.steps_per_frametime)
+            self.phis.append(res)
+            self.n_phi += 1
             return res
         
     def column_at_t(self, t, column):

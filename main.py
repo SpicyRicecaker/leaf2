@@ -182,20 +182,20 @@ class Camera:
 # ---------------------------------------------------------------------------
 
 def compute_leaf_model_matrix(t: float, predictor, i) -> np.ndarray:
-    cycle  = t % FALL_DURATION
-    alpha  = cycle / FALL_DURATION
-    y      = LEAF_START_Y + alpha * (LEAF_END_Y - LEAF_START_Y)
-
-    x = predictor.x(i)
-    y = predictor.z(i)
+    x = predictor.x(i) * 2.5
+    y = predictor.z(i) * 2.5
 
     translation = pyrr.matrix44.create_from_translation(
-        pyrr.Vector3([x, y, LEAF_Z]), dtype=np.float32)
+        pyrr.Vector3([x, y, -5]), dtype=np.float32)
 
-    angle = math.sin(2.0 * math.pi * t)
-    rx    = pyrr.matrix44.create_from_x_rotation(angle, dtype=np.float32)
-    ry    = pyrr.matrix44.create_from_y_rotation(angle, dtype=np.float32)
-    rz    = pyrr.matrix44.create_from_z_rotation(angle, dtype=np.float32)
+    # angle = math.sin(2.0 * math.pi * t)
+    # phi is the angle from disc normal to gravitational up 
+    phi = predictor.phi(i)
+
+    # not sure why the matrices for y and z seem reversed here
+    rx    = pyrr.matrix44.create_from_x_rotation(np.radians(90), dtype=np.float32)
+    ry    = pyrr.matrix44.create_from_y_rotation(-phi, dtype=np.float32)
+    rz    = pyrr.matrix44.create_from_z_rotation(0, dtype=np.float32)
 
     rotation = pyrr.matrix44.multiply(rz, pyrr.matrix44.multiply(ry, rx))
     model    = pyrr.matrix44.multiply(rotation, translation)
