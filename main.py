@@ -251,8 +251,8 @@ def main():
     mouse_captured = False
     clock_obj      = pygame.time.Clock()
 
-    files = ["data_m01_G90.mat", "data_m05_G160.mat", "data_m10_G150.mat"]
-    disc_transform_predictor_1 = DiscTransformPredictor(files[1], 1 / 60)
+    files = ["data_stable.mat", "data_m01_G90.mat", "data_m05_G160.mat", "data_m10_G150.mat"]
+    disc_transform_predictor_1 = DiscTransformPredictor(files[0], 1 / 60)
     i_x = 0
 
     # --- graph  ---------------------------------------------------------
@@ -312,7 +312,7 @@ def main():
         model = compute_leaf_model_matrix(t, disc_transform_predictor_1, i_x)
         view  = camera.get_view_matrix()
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glClear(GL_DEPTH_BUFFER_BIT)
         glUseProgram(program)
 
         glUniformMatrix4fv(u_model,      1, GL_FALSE, model)
