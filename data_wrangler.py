@@ -38,9 +38,10 @@ class DiscTransformPredictor:
         
         # populate the basecase
         self.xs = [0]
-        self.zs = [10] # this will probably change later
+        self.zs = [4] # this will probably change later
         self.phis = [0]
-        self.n_i = 1
+        self.n_x = 1
+        self.n_z = 1
         self.frametime = frametime
         self.steps_per_frametime = 10
 
@@ -60,12 +61,21 @@ class DiscTransformPredictor:
         return acc
 
     def x(self, i):
-        if i < self.n_i:
+        if i < self.n_x:
             return self.xs[i]
-        if i >= self.n_i:
+        if i >= self.n_x:
             res = self.x(i - 1) + self.integrate_column('ux', self.t(i - 1), self.t(i), self.steps_per_frametime)
             self.xs.append(res)
-            self.n_i += 1
+            self.n_x += 1
+            return res
+
+    def z(self, i):
+        if i < self.n_z:
+            return self.zs[i]
+        if i >= self.n_z:
+            res = self.z(i - 1) + self.integrate_column('uz', self.t(i - 1), self.t(i), self.steps_per_frametime)
+            self.zs.append(res)
+            self.n_z += 1
             return res
         
     def column_at_t(self, t, column):

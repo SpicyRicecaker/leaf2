@@ -187,6 +187,7 @@ def compute_leaf_model_matrix(t: float, predictor, i) -> np.ndarray:
     y      = LEAF_START_Y + alpha * (LEAF_END_Y - LEAF_START_Y)
 
     x = predictor.x(i)
+    y = predictor.z(i)
 
     translation = pyrr.matrix44.create_from_translation(
         pyrr.Vector3([x, y, LEAF_Z]), dtype=np.float32)
