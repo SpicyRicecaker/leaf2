@@ -35,6 +35,12 @@ class DiscTransformPredictor:
                 case "data_m01_G90.mat":
                     self.df.t -= 2.478290000000000e+02 # zero out the time
                     self.phi_0 = np.asin(self.df.xax[0])
+                case "data_m05_G160.mat":
+                    self.df.t -= 1.988690000000000e+02 # zero out the time
+                    self.phi_0 = -np.asin(self.df.xax[0])
+                case "data_m10_G150.mat":
+                    self.df.t -= 9.215119999999999e+02 # zero out the time
+                    self.phi_0 = np.asin(self.df.xax[0])
             
         except NotImplementedError:
             print("Error: This appears to be a MATLAB v7.3+ file. Use 'h5py' instead.")

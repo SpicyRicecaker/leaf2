@@ -186,7 +186,7 @@ def compute_leaf_model_matrix(t: float, predictor, i) -> np.ndarray:
     y = predictor.z(i) * 2.5
 
     translation = pyrr.matrix44.create_from_translation(
-        pyrr.Vector3([x, y, -5]), dtype=np.float32)
+        pyrr.Vector3([x, y, -50]), dtype=np.float32)
 
     # angle = math.sin(2.0 * math.pi * t)
     # phi is the angle from disc normal to gravitational up 
@@ -254,7 +254,9 @@ def main():
     # --- state  ---------------------------------------------------------
     mouse_captured = False
     clock_obj      = pygame.time.Clock()
-    disc_transform_predictor_1 = DiscTransformPredictor('data_m01_G90.mat', 1 / 60)
+
+    files = ["data_m01_G90.mat", "data_m05_G160.mat", "data_m10_G150.mat"]
+    disc_transform_predictor_1 = DiscTransformPredictor(files[1], 1 / 60)
     i_x = 0
 
     # --- main loop  -----------------------------------------------------
