@@ -8,6 +8,8 @@ from pygame.locals import *
 
 import numpy as np
 import pyrr
+import pygltflib
+import base64
 
 from OpenGL.GL import *
 from OpenGL.GL import shaders
@@ -15,37 +17,28 @@ from OpenGL.GL import shaders
 from graph import RealtimeGraph
 from shared_clock import SharedClock
 from framebar import FrameBar
-
 from data_wrangler import DiscTransformPredictor
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-WIN_W, WIN_H       = 1280, 720
-FOV_DEG            = 70.0
-NEAR, FAR          = 0.01, 1000.0
+WIN_W, WIN_H      = 1280, 720
+FOV_DEG           = 70.0
+NEAR, FAR         = 0.01, 1000.0
 
-MOVE_SPEED         = 5.0
-MOUSE_SENSITIVITY  = 0.1
+MOVE_SPEED        = 5.0
+MOUSE_SENSITIVITY = 0.1
 
-FALL_DURATION      = 5.0
-LEAF_START_Y       =  4.0
-LEAF_END_Y         = -2.0
-LEAF_X             =  0.0
-LEAF_Z             =  0.0
+PLAYER_START      = pyrr.Vector3([0.0, 0.0, 6.0])
+PLAYER_PITCH      =  0.0
+PLAYER_YAW        = -90.0
 
-PLAYER_START       = pyrr.Vector3([0.0, 0.0,  6.0])
-PLAYER_PITCH       =  0.0
-PLAYER_YAW         = -90.0
-
-LIGHT_DIR          = np.array([ 0.3, -1.0,  0.5], dtype=np.float32)
-LIGHT_COLOR        = np.array([ 1.0,  1.0,  1.0], dtype=np.float32)
-
-COLOR_FRONT = np.array([0.2, 0.7, 0.15], dtype=np.float32)
-COLOR_BACK  = np.array([0.8, 0.75, 0.1], dtype=np.float32)
+LIGHT_DIR         = np.array([ 0.0, -1.0,  0.5], dtype=np.float32)
+LIGHT_COLOR       = np.array([ 1.0,  1.0,  1.0], dtype=np.float32)
 
 # ---------------------------------------------------------------------------
-# Shader helpers
+# Shader helpers  (unchanged)
 # ---------------------------------------------------------------------------
 
 def load_shader_source(path: str) -> str:
@@ -63,43 +56,90 @@ def build_program(vert_path: str, frag_path: str) -> int:
     return int(program)
 
 # ---------------------------------------------------------------------------
-# Leaf geometry
+# FBX loader  (replaces build_leaf_vbo)
 # ---------------------------------------------------------------------------
 
-def build_leaf_vbo() -> tuple[int, int, int]:
-    hs = 0.5
+def load_glb_mesh(glb_path: str) -> tuple[int, int, int, int]:
+    """
+    Load a GLB file (glTF binary) and upload to OpenGL.
+    Returns (vao, vbo, ebo, index_count).
+    Assumes single mesh, single primitive, Y-up (export with Y-up from Blender).
+    """
 
-    tl = [-hs,  hs, 0.0]
-    tr = [ hs,  hs, 0.0]
-    br = [ hs, -hs, 0.0]
-    bl = [-hs, -hs, 0.0]
+    here = os.path.dirname(os.path.abspath(__file__))
+    full_path = os.path.join(here, glb_path)
 
-    nf = [0.0, 0.0,  1.0]
-    nb = [0.0, 0.0, -1.0]
+    gltf = pygltflib.GLTF2().load(full_path)
 
-    cf = COLOR_FRONT.tolist()
-    cb = COLOR_BACK.tolist()
+    # helper: pull raw bytes out of a bufferView by accessor index
+    def get_accessor_data(accessor_idx: int) -> np.ndarray:
+        accessor    = gltf.accessors[accessor_idx]
+        buffer_view = gltf.bufferViews[accessor.bufferView]
+        buffer      = gltf.buffers[0]
 
-    def v(pos, n, c):
-        return pos + n + c
+        # GLB stores binary chunk directly
+        blob = gltf.binary_blob()
 
-    vertices = [
-        v(tl, nf, cf), v(bl, nf, cf), v(br, nf, cf),
-        v(tl, nf, cf), v(br, nf, cf), v(tr, nf, cf),
-        v(tl, nb, cb), v(br, nb, cb), v(bl, nb, cb),
-        v(tl, nb, cb), v(tr, nb, cb), v(br, nb, cb),
-    ]
+        start  = buffer_view.byteOffset or 0
+        length = buffer_view.byteLength
+        raw    = blob[start : start + length]
 
-    data = np.array(vertices, dtype=np.float32).flatten()
+        # accessor component types
+        COMPONENT_DTYPE = {
+            5120: np.int8,
+            5121: np.uint8,
+            5122: np.int16,
+            5123: np.uint16,
+            5125: np.uint32,
+            5126: np.float32,
+        }
+        TYPE_COUNT = {
+            "SCALAR": 1,
+            "VEC2":   2,
+            "VEC3":   3,
+            "VEC4":   4,
+            "MAT4":  16,
+        }
 
+        dtype      = COMPONENT_DTYPE[accessor.componentType]
+        n_comps    = TYPE_COUNT[accessor.type]
+        acc_offset = accessor.byteOffset or 0
+
+        arr = np.frombuffer(raw, dtype=dtype, offset=acc_offset)
+
+        if n_comps > 1:
+            arr = arr.reshape(-1, n_comps)
+
+        return arr.copy()   # copy so it's writeable
+
+    # --- grab the first mesh primitive ---
+    primitive = gltf.meshes[0].primitives[0]
+
+    positions = get_accessor_data(primitive.attributes.POSITION).astype(np.float32)
+    normals   = get_accessor_data(primitive.attributes.NORMAL).astype(np.float32)
+    uvs       = get_accessor_data(primitive.attributes.TEXCOORD_0).astype(np.float32)
+    indices   = get_accessor_data(primitive.indices).astype(np.uint32).flatten()
+
+    # sanity check
+    print(f"[GLB] verts={len(positions)}  indices={len(indices)}")
+
+    # interleave pos(3) + normal(3) + uv(2)
+    vertex_data = np.hstack([positions, normals, uvs])  # (N, 8)
+
+    # --- upload ---
     vao = glGenVertexArrays(1)
     vbo = glGenBuffers(1)
+    ebo = glGenBuffers(1)
 
     glBindVertexArray(vao)
-    glBindBuffer(GL_ARRAY_BUFFER, vbo)
-    glBufferData(GL_ARRAY_BUFFER, data.nbytes, data, GL_STATIC_DRAW)
 
-    stride = 9 * ctypes.sizeof(ctypes.c_float)
+    glBindBuffer(GL_ARRAY_BUFFER, vbo)
+    glBufferData(GL_ARRAY_BUFFER, vertex_data.nbytes, vertex_data, GL_STATIC_DRAW)
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
+
+    stride = 8 * ctypes.sizeof(ctypes.c_float)
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride,
                           ctypes.c_void_p(0))
@@ -109,16 +149,45 @@ def build_leaf_vbo() -> tuple[int, int, int]:
                           ctypes.c_void_p(3 * ctypes.sizeof(ctypes.c_float)))
     glEnableVertexAttribArray(1)
 
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride,
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride,
                           ctypes.c_void_p(6 * ctypes.sizeof(ctypes.c_float)))
     glEnableVertexAttribArray(2)
 
     glBindVertexArray(0)
 
-    return vao, vbo, len(vertices)
+    return vao, vbo, ebo, len(indices)
+
 
 # ---------------------------------------------------------------------------
-# Camera
+# Texture loader
+# ---------------------------------------------------------------------------
+
+def load_texture(image_path: str) -> int:
+    """Load a jpg/png and upload to OpenGL. Returns texture ID."""
+
+    surface = pygame.image.load(image_path)
+    surface = pygame.transform.flip(surface, False, False)  # FlipUVs in assimp handles this
+    img_data = pygame.image.tostring(surface, "RGB", False)
+    w, h     = surface.get_size()
+
+    tex_id = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, tex_id)
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, img_data)
+    glGenerateMipmap(GL_TEXTURE_2D)
+
+    glBindTexture(GL_TEXTURE_2D, 0)
+    return tex_id
+
+
+# ---------------------------------------------------------------------------
+# Camera  (unchanged)
 # ---------------------------------------------------------------------------
 
 class Camera:
@@ -177,8 +246,9 @@ class Camera:
         if keys[K_SPACE]:  self.position += world_up * speed
         if keys[K_LSHIFT]: self.position -= world_up * speed
 
+
 # ---------------------------------------------------------------------------
-# Leaf transform
+# Leaf transform  — added Blender Y-up correction via extra X rotation
 # ---------------------------------------------------------------------------
 
 def compute_leaf_model_matrix(t: float, predictor, i) -> np.ndarray:
@@ -188,18 +258,26 @@ def compute_leaf_model_matrix(t: float, predictor, i) -> np.ndarray:
     translation = pyrr.matrix44.create_from_translation(
         pyrr.Vector3([x, y, -50]), dtype=np.float32)
 
-    # angle = math.sin(2.0 * math.pi * t)
-    # phi is the angle from disc normal to gravitational up 
     phi = predictor.phi(i)
 
-    # not sure why the matrices for y and z seem reversed here
-    rx    = pyrr.matrix44.create_from_x_rotation(np.radians(90), dtype=np.float32)
-    ry    = pyrr.matrix44.create_from_y_rotation(-phi, dtype=np.float32)
-    rz    = pyrr.matrix44.create_from_z_rotation(0, dtype=np.float32)
+    # Blender Z-up → OpenGL Y-up correction: rotate -90 deg around X
+    rx_correct = pyrr.matrix44.create_from_x_rotation(np.radians(0), dtype=np.float32)
 
-    rotation = pyrr.matrix44.multiply(rz, pyrr.matrix44.multiply(ry, rx))
-    model    = pyrr.matrix44.multiply(rotation, translation)
+    rx    = pyrr.matrix44.create_from_x_rotation(0, dtype=np.float32)
+    ry    = pyrr.matrix44.create_from_y_rotation(0, dtype=np.float32)
+    rz    = pyrr.matrix44.create_from_z_rotation(phi, dtype=np.float32)
+
+    rotation = pyrr.matrix44.multiply(
+        rz,
+        pyrr.matrix44.multiply(
+            ry,
+            pyrr.matrix44.multiply(rx, rx_correct)
+        )
+    )
+
+    model = pyrr.matrix44.multiply(rotation, translation)
     return model
+
 
 # ---------------------------------------------------------------------------
 # Main
@@ -224,47 +302,47 @@ def main():
     glViewport(0, 0, WIN_W, WIN_H)
     glClearColor(0.53, 0.81, 0.92, 1.0)
 
-    program               = build_program("shaders/leaf.vert", "shaders/leaf.frag")
-    vao, vbo, vertex_count = build_leaf_vbo()
+    program = build_program("shaders/leaf.vert", "shaders/leaf.frag")
 
-    u_model      = glGetUniformLocation(program, "model")
-    u_view       = glGetUniformLocation(program, "view")
-    u_projection = glGetUniformLocation(program, "projection")
-    u_lightDir   = glGetUniformLocation(program, "lightDir")
-    u_lightColor = glGetUniformLocation(program, "lightColor")
-    u_viewPos    = glGetUniformLocation(program, "viewPos")
+    # --- load FBX ---
+    vao, vbo, ebo, index_count = load_glb_mesh("american_elm.glb")  # <-- your fbx filename here
+
+    # --- load texture ---
+    tex_id = load_texture("american elm front flat.jpg")  # <-- your path
+
+    # --- uniforms ---
+    u_model       = glGetUniformLocation(program, "model")
+    u_view        = glGetUniformLocation(program, "view")
+    u_projection  = glGetUniformLocation(program, "projection")
+    u_lightDir    = glGetUniformLocation(program, "lightDir")
+    u_lightColor  = glGetUniformLocation(program, "lightColor")
+    u_viewPos     = glGetUniformLocation(program, "viewPos")
+    u_leafTexture = glGetUniformLocation(program, "leafTexture")
 
     projection = pyrr.matrix44.create_perspective_projection_matrix(
         FOV_DEG, WIN_W / WIN_H, NEAR, FAR, dtype=np.float32)
 
     camera = Camera(PLAYER_START, PLAYER_PITCH, PLAYER_YAW)
 
-    # --- shared clock  --------------------------------------------------
-    clock = SharedClock()
-
-    # --- framebar  ------------------------------------------------------
+    clock    = SharedClock()
     hwnd     = pygame.display.get_wm_info()["window"]
     framebar = FrameBar(clock, hwnd)
     framebar.start()
 
-    # --- state  ---------------------------------------------------------
     mouse_captured = False
     clock_obj      = pygame.time.Clock()
 
     files = ["data_stable.mat", "data_m01_G90.mat", "data_m05_G160.mat", "data_m10_G150.mat"]
-    disc_transform_predictor_1 = DiscTransformPredictor(files[0], 1 / 60)
+    disc_transform_predictor_1 = DiscTransformPredictor(files[1], 1 / 60)
     i_x = 0
 
-    # --- graph  ---------------------------------------------------------
     graph = RealtimeGraph(clock.get_time, disc_transform_predictor_1)
     graph.start()
 
-    # --- main loop  -----------------------------------------------------
     running = True
     while running:
- 
+
         dt = clock_obj.tick(60) / 1000.0
-        # dt = min(dt, 0.05)
         t  = clock.get_time()
 
         for event in pygame.event.get():
@@ -292,7 +370,7 @@ def main():
 
                 elif event.key == K_LEFT:
                     clock.step_frames(-1)
-                
+
                 elif event.key == K_r:
                     clock.reset()
 
@@ -300,20 +378,22 @@ def main():
                 dx, dy = event.rel
                 camera.process_mouse(float(dx), float(dy))
 
-
-        # only move camera when not paused / scrubbing
         if not clock.is_paused():
             keys = pygame.key.get_pressed()
             camera.process_keyboard(keys, dt)
-        # Move camera independently of simulation pause state
         keys = pygame.key.get_pressed()
         camera.process_keyboard(keys, dt)
 
         model = compute_leaf_model_matrix(t, disc_transform_predictor_1, i_x)
         view  = camera.get_view_matrix()
 
-        glClear(GL_DEPTH_BUFFER_BIT)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # added COLOR_BUFFER_BIT
         glUseProgram(program)
+
+        # bind texture to unit 0
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, tex_id)
+        glUniform1i(u_leafTexture, 0)
 
         glUniformMatrix4fv(u_model,      1, GL_FALSE, model)
         glUniformMatrix4fv(u_view,       1, GL_FALSE, view)
@@ -323,16 +403,17 @@ def main():
         glUniform3fv(u_viewPos,    1, camera.position.astype(np.float32))
 
         glBindVertexArray(vao)
-        glDrawArrays(GL_TRIANGLES, 0, vertex_count)
+        glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, None)
         glBindVertexArray(0)
 
-        # update state
         i_x += 1
 
         pygame.display.flip()
 
     glDeleteVertexArrays(1, [vao])
     glDeleteBuffers(1, [vbo])
+    glDeleteBuffers(1, [ebo])
+    glDeleteTextures(1, [tex_id])
     glDeleteProgram(program)
     graph.stop()
     pygame.quit()
