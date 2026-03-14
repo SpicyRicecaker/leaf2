@@ -1,3 +1,7 @@
+# data statement
+
+The data for falling leaves is kindly provided by Prof. Jan Dusek, published in the research paper "Numerical Simulation of the Dynamics of Freely Falling Discs" (2013). I do not take credit for any of the highly detailed data, nor the insights provided by his and his colleagues in the paper. 
+
 # todo
 
 - Read in matplot data into dataframe
