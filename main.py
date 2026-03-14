@@ -242,10 +242,6 @@ def main():
     # --- shared clock  --------------------------------------------------
     clock = SharedClock()
 
-    # --- graph  ---------------------------------------------------------
-    graph = RealtimeGraph(clock.get_time)
-    graph.start()
-
     # --- framebar  ------------------------------------------------------
     hwnd     = pygame.display.get_wm_info()["window"]
     framebar = FrameBar(clock, hwnd)
@@ -258,6 +254,10 @@ def main():
     files = ["data_m01_G90.mat", "data_m05_G160.mat", "data_m10_G150.mat"]
     disc_transform_predictor_1 = DiscTransformPredictor(files[1], 1 / 60)
     i_x = 0
+
+    # --- graph  ---------------------------------------------------------
+    graph = RealtimeGraph(clock.get_time, disc_transform_predictor_1)
+    graph.start()
 
     # --- main loop  -----------------------------------------------------
     running = True
