@@ -29,6 +29,9 @@ class DiscTransformPredictor:
             self.df = pd.DataFrame(data_dict)
 
             match path:
+                # this dataset has m* (dimensionless mass) = 0.1
+                # to put this in perspective, if you have 0.1g dime of 1cm diameter in water, it would have m* = 0.1
+                # so this is essentially tiny
                 case "data_m01_G90.mat":
                     self.df.t -= 2.478290000000000e+02 # zero out the time
                     self.phi_0 = np.asin(self.df.xax[0])
