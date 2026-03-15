@@ -49,52 +49,46 @@ An autumn elm leaf in OSU campus was collected and allowed to sit betwixt book p
 
 == Gathering of Empirical Data for Simulation
 
-One-shot high-precision time-series values for horizontal velocity, vertical velocity, and angular velocity relative to the trajectory plane were requested from one of the authors of @dusek.
+One-shot, high-precision time-series values for horizontal velocity, vertical velocity, and angular velocity relative to the trajectory plane for the periodic fluttering and tumbling regimes were requested from one of the authors of @dusek.
+
+Each representative data point on the Re / $I*$ phase space had the parameters as shown in @phase_space.
 
 #figure(
   table(
-    columns: (1fr, 1fr, 1fr, 1fr, 1fr),
+    columns: (1fr, 1fr, 1fr),
     inset: 10pt,
     align: horizon,
-    table.header([Scenario], [$I^*$], [$"Re"$], [$t slash d$], [$h slash d space (plus.minus 0.002)$]),
-    [A], [$1 times 10^1$], [$5 times 10^3$], [19.5], [19.5],
-    [B], [-3], [1.0], [19.5], [19.5],
-    [D], [-2], [0.5], [19.5], [19.5],
+    table.header([Regime], [$m^*$], [$"G"$]),
+    [Fluttering Periodic], [0.1], [90],
+    [Tumbling (low inertia)], [0.5], [160],
+    [Tumbling (high inertia)], [10], [150],
   ),
-  caption: [Parameters for the three scenarioes presented in @heisingers_plot. $I^*$ is the dimensionless moment of inertia. Re is the Reynold's number. $t slash d$ is the dimensionless thickness of disc over diameter of disc. $h slash d$ is the dimensionless height of drop of disc over the diameter of the disc.],
-)
+  caption: [Parameters for two scenarios which represent two leaf motion regimes. Simulation data provided by @dusek. $m*$ is the non-dimensionalized mass, and G is the galileo number (see below for explanations).],
+) <phase_space>
 
-The data had the parameters, based on the regime
-  - Fluttering Periodic
-    - $m^*=0.1$ $G=90$
-  - Tumbling
-    - $m^*=0.5$ $G=160$ (low non-dimensionalized mass)
-    - $m^*=10$ $G=150$ (high non-dimensionalized mass)
 
-- For the stable regime, no empirical data was found, and the the leaf is was assumed to be at terminal velocity in the fluid with a constant velocity in the direction of gravity.
-
-- The chaotic regime, a combination of fluttering and tumbling, was not evaluated in this paper, due to difficulties establishing a valid quantitative analysis method. Look to the discussion for further details.
-
-- $m^*$ is known as the "non-dimensionalized mass", defined as
+$m^*$ is known as the "non-dimensionalized mass", defined as
 $
   m^* = m/(rho d^3)
 $
 where $m$ represents the mass of the object, $rho$ represents the density of the fluid in which the object is moving in, and $d$ represents the diameter of the object.
-- $G$ is known as the Galileo Number. Similar to the Reynolds Number commonly used in fluid mechanics, it scales with the length or volume of the object, and scales inversely with the viscocity of the fluid. A higher Galileo Number implies that a falling object is less affected by the turbulence of fluid.
 
+$G$ is known as the Galileo Number. Similar to the Reynolds Number commonly used in fluid mechanics, it scales with the length or volume of the object, and scales inversely with the viscocity of the fluid. A higher Galileo Number implies that a falling object is less affected by the turbulence of fluid.
+
+For the stable regime, no empirical data was found, and the the leaf is was assumed to be at terminal velocity in the fluid with a constant velocity equal to the average velocity of the fluttering regime provided in @phase_space in the direction of gravity.
+
+The chaotic regime, a combination of fluttering and tumbling, was not evaluated in this paper, due to difficulties establishing a valid quantitative analysis method. Look to the discussion for further details.
 
 == Simulation Procedure
 
-@dusek
+The velocity datapoints provided by @dusek were provided in discrete time steps. However, our leaf simulation runs at a fixed timestep of 16.67 ms (1/60s). To intergrate over the velocity at uneven time steps to find position and angle, we linearly interpolate values associated with each empirical datapoint based off the position of simulation time in the relevant empirical interval.
 
-- Data for translation and angular velocities were provided in discrete time steps
-- We linearly interpolate values between discrete time steps
-- Leaf simulation has a fixed time step of 16.67 ms
-- We take 10 simulation steps using a naive euler integration method, using a binary search to select to for the relevant discrete data points to interpolate between
+We take 10 simulation steps per visual frame using a naive euler integration method, using a binary search to select to for the relevant discrete data points to interpolate between.
 
 == Analytical Procedure
 
-We evaluate the simulation at each of the regimes.
+We evaluate the simulation by grouping each simulation into a regime, then evaluating the characteristics observed in the simulation versus the known qualities in literature.
+
 For each regime, we look at the horizontal position over time, and qualitatively look for evidence of periodicity in the horizontal and vertical position, as well as in the angle (about the trajectory plane normal).
 For each regime, we also qualitatively look at the displacement between the initial horizontal fall and a point in time later into the simulation. Based on this displacement, we extrapolate where the leaf would end and compare to @heisinger
 
@@ -169,15 +163,30 @@ Finally, from @my_plots(D), which uses data from a higher dimensionless mass dis
 
 = Discussion
 
-- Wind itself has varying characteristics. Different temperatures can significantly affect the density of the air (citation needed). The velocity of wind, and local area turbulence may affect both the energy in the air are often non-quasi-static forces, meaning different parts of the air may have different pressures. This means the momentary density of air may not be constant.
-- Very surprising. An initial hypothesis was that a rigid body simulation would not be able to fully capture the dynamic behavior of a leaf, because it would lose some of the perturbations one would expect in the flexible mechanical structure of a leaf. However, we have seen from literature, from qualitative analysis of our simulation, that rigid body simulations can in fact capture periodicity in fluttering and tumbling. Perhaps this is due to the nature of fluid interactions already being chaotic enough to exacerbate small perturbations in orienation when an object is dropped. Further research on performant but realistic simulation of leaves in games could perhaps focus on rigid-body simulations and forego softbody simulations, which are more complex.
-- We did not consider chaotic
-- There are intermediate transfer states between states that we did not account for due to complexity. These may be the most dynamic leaf states.
-- Current empirical data for discs in fluid mostly assume a net stationary fluid. A big limitation of the predictive model is thus interactivity with the environment and wind. Full scale numerical simulations as done by @heisinger are still too expensive, but one question is if perhaps an offline simulation with Navier-Stokes can be done across static wind fields, and the result fed into a neural network. 
-- Empirical data is limited by set parameters such as $"Re"$ and $I^*$.
-- Use of empirical data + predictive models could be the future of real-time leaf simulation in computer graphics.
+The simulation results were very surprising. An initial hypothesis was that a rigid body simulation would not be able to fully capture the dynamic behavior of a leaf, because it would lose some of the perturbations one would expect in the flexible mechanical structure of a leaf. However, we have seen from literature, from qualitative analysis of our simulation, that rigid body simulations can in fact capture periodicity in fluttering and tumbling. Perhaps this is due to the nature of fluid interactions already being chaotic enough to exacerbate small perturbations in orienation when an object is dropped. Further research on performant but realistic simulation of leaves in games could perhaps focus on rigid-body simulations and forego softbody simulations, which are more complex.
+
+== Unsimulated regimes
+This paper only considered the 4 primary regimes of leaf motion, simulating 3. 
+
+Our paper did not consider the chaotic regime, due to the fact that the chaotic regime has complex leaf movement that is not easy to qualitiatively analyze for oscillations. Given the data, in the future a fourier analysis could be made on the chaotic regime to determine frequencies for which probability density peaks. 
+
+Additionally, advancements in empirical and numerical simulation have revealed new regimes, such as the "helix" regime discovered by @zhong and the "zig-zagging" regime discovered by @dusek. These may be the most dynamic leaf states.
+
+Chaotic leaf movement as well as newly-discovered dynamic regimes could potentially encompass a large part of the visually interesting movement of leaves, so this is a critical aspect of the paper yet to be explored.
+
+== Limitations
+
+One weakness of this paper was that we used one-shot values in the Re/$I^*$ leaf-regime space. However, different parameters in the same regime could capture different leaf behaviors. Due to not having implemented a full fluid mechanical simulation in this paper, we were unable to distill as much data as was possible.
+
+Current empirical data for discs in fluid mostly assume a net stationary fluid. A big limitation of the predictive model is thus interactivity with the environment and wind. Full scale numerical simulations as done by @heisinger are still too expensive, but one question is if perhaps an offline simulation with Navier-Stokes can be done across static wind fields, and the result fed into a neural network. 
+
+Finally, one large limitation of current empirical data on falling discs is that wind itself has varying characteristics. Different temperatures can significantly affect the density of the air (citation needed). The velocity of wind, and local area turbulence may affect both the energy in the air are often non-quasi-static forces, meaning different parts of the air may have different pressures. This means the momentary density of air may not be constant.
 
 = Conclusion
+
+In this paper, we used empirical data from @dusek of falling discs in fluid to visualize the motion of falling leaves in air. We analyzed this trajectory via known characteristics for leaf movement based on categorical regime based off literature. We found that @dusek's data was in agreeance with literature, as was our visual qualitative analysis of the leaf's motion. 
+
+Our results suggest that the distillation of empirical data from accurate numerical simulations of objects in fluid could yield realistic leaf simulations with high-performance, a meaningful avenue for which to bring realistic leaf movement into games.
 
 = Acknowledgements
 
