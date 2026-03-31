@@ -5,12 +5,17 @@
   authors: (
     (name: "Shengdong Li", email: "lishen@oregonstate.edu", affiliation: "Oregon State University"),
   ),
-  date: "March 3, 2026",
-  acknowledgements: "An undergraduate thesis advised by Mike Bailey
+  date: "June 1, 2026",
+  acknowledgements: "An undergraduate thesis advised by Prof. Mike Bailey
 submitted to the Department of Physics, Oregon State University
 in partial fulfillment of the requirements for the degree of Bachelor of Science in Physics",
-  figuress: image("figures/OSU Logo.pdf", width: 50%),
+  figuress: image("assets/OSU Logo.pdf", width: 50%),
 )
+
+#show heading.where(level: 1): it => {
+  pagebreak()
+  it
+}
 
 #show ref: it => {
   set text(blue)
@@ -150,8 +155,6 @@ For each regime, we also qualitatively look at the displacement between the init
   ),
   caption: [Trajectory for falling discs of various parameters at an arbitrary drop height and arbitrary physical scale over 15 seconds, visualized in OpenGL. Simulation data for B, C, D provided by @dusek.],
 ) <my_plots>
-
-= Analysis
 
 From @my_plots(A) we can see in the stable regime, there is little to no change in horizontal displacement over the drop. This is in agreeance with @heisingers_plot(A).
 
