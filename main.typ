@@ -1,14 +1,14 @@
 #import "conf.typ": *
 #show: arkheion.with(
   title: "Thesis",
-  abstract: "We attempt to simulate the visual aesthetics and kinetic motion of a falling leaf with high fidelity. We took a 2D scan of a real leaf and modeled the simulated leaf based off of the model. We analyzed literature to find the empirically observed characteristics of falling leaves that contribute to their dynanicism. We overview 4 specific falling regimes falling objects in fluid commonly undergo. We created a simple predictive model to replicate the motion in 3 of the 4 falling regimes. Our motion has the characteristic of being periodic and arrives at an end destination that is representative of what is observed literature.",
+  abstract: [I attempt to simulate the visual aesthetics and kinetic motion of a falling leaf with high fidelity. I take a 2D scan of a real leaf and model the simulated leaf. I analyze literature to find the empirically observed characteristics of falling leaves that contribute to their dynanicism. I overview _four_ specific falling regimes falling objects in fluid commonly undergo. I create a simple predictive model to replicate the motion in three of the four falling regimes. The resulting motion has the characteristic of being periodic and arrives at an end destination that is representative of what is observed in literature.],
   authors: (
     (name: "Shengdong Li", email: "lishen@oregonstate.edu", affiliation: "Oregon State University"),
   ),
-  date: "June 1, 2026",
-  acknowledgements: "An undergraduate thesis advised by Prof. Mike Bailey
+  date: [June 1, 2026],
+  acknowledgements: [An undergraduate thesis advised by Prof. Mike Bailey
 submitted to the Department of Physics, Oregon State University
-in partial fulfillment of the requirements for the degree of Bachelor of Science in Physics",
+in partial fulfillment of the requirements for the degree of Bachelor of Science in Physics],
   figuress: image("assets/OSU Logo.pdf", width: 50%),
 )
 
@@ -29,34 +29,36 @@ in partial fulfillment of the requirements for the degree of Bachelor of Science
 
 The falling of leaves can greatly add to the emotion, tone, and ambiance of games. 
 
-However, naive methods to fully and accurately simulate the movement of a leaf in air seem to require full solves of the Navier-Stokes fluid equation of the air interacting with the leaf. Games have a unique realtime requirement. This complexity of simulating the air fluid for leaves seems to have been a limiting factor for realistic leaf movement in games; many popular games made in the last few years such as Sekiro seems to consist of leaf movement with arbitrary linear movement and rotation.
+However, naive methods to fully and accurately simulate the movement of a leaf in air seem to require full solves of the Navier-Stokes fluid equation that govern air-leaf interaction. Games have a unique realtime requirement. This complexity of simulating the air fluid for leaves seems to have been a limiting factor for realistic leaf movement in games; many popular games made in the last few years, such as Sekiro, seem to consist of leaf movement with arbitrary linear movement and rotation.
 
 Recently, there have been attempts made to simulate moving bodies in fluid which begin to capture the complex movement of falling bodies with the realtime requirement in mind. Soliman et. all @soliman focused on the local energy of the fluid surrounding objects, precomputing as many values as possible and making approximations to achieve linear time simulation. But the logic is complex, and some movement regimes still fail to be captured.
 
-Can we approach the simulation problem from another perspective? The history of fluid mechanics has been rich with empirical observation, only made more practical and accessible over time with the advancement of technology and sensors. Several studies have been done on falling discs in fluid (@heisinger, @zhong). For flat discs, (while there have been discoveries of intermediary states), much of literature agrees on 4 primary regimes of movement, which are (1) steady, (2) fluttering (3) tumbling (4) chaotic (a combination of fluttering and tumbling) (@heisinger, @zhong).
+Can we approach the simulation problem from another perspective? The history of fluid mechanics has been rich with empirical observation, only made more practical and accessible over time with the advancement of technology and sensors. Several studies have been done on falling discs in fluid (@heisinger, @zhong). For flat discs, (while there have been discoveries of intermediary states), much of literature agrees on four primary regimes of movement, which are (1) steady, (2) fluttering (3) tumbling (4) chaotic (a combination of fluttering and tumbling) (@heisinger, @zhong).
 
 #figure(
   image("assets/image-7.png"),
   caption: [The four primary regimes of leaf movement. Figure taken from Figure 2 of Coins Falling in Water (2013) @heisinger.],
 ) <heisingers_regimes>
 
-The deciding of each regime seems to depend primarily on two factors, the Reynold's Number Re (or alternatively the Galileo Number) --- which factors in viscocity of fluid and speed of falling object --- and the Moment of Inertia of the disc in question (often denoted converted to a dimensionless quantity and denoted $I^*$). In other words, we have a good idea of _how_ to obtain a specific leaf trajectory, and additionally, we have some ideas of qualitative and quantitative values with which to _evaluate_ the trajectory of a leaf, once we obtain that trajectory.
+The deciding of each regime seems to depend primarily on two factors, the Reynold's Number Re (or alternatively the Galileo Number) --- which factors in viscocity of fluid and speed of falling object --- and the Moment of Inertia of the disc in question (often denoted converted to a dimensionless quantity and denoted $I^*$). In other words, we have a good idea of _how_ to obtain a specific leaf trajectory, and additionally, we have some ideas of qualitative and quantitative values with which to _evaluate_ the trajectory of a leaf, once weobtain that trajectory.
 
 In 2013, @dusek simulated the falling of disc in fluid with various parameteres of Galileo Number and $I*$, via a full solve of the Navier-Stokes equations. They obtained data with good agreement with empirical observations of nature.
 
-As use of probabilistic models to predict physics in computer graphics has been a trend could we apply this to leaf simulations? Could we distill the information in numerical simulations to create a performant visualization for the game use case? How realistic and performant would a simulation making use of the empirical data from literature of (1) horizontal disc velocity over time (2) vertical disc velocity over time and (3) disc angular velocity over time simulate the falling trajectory of a leaf in air?
+As use of probabilistic models to predict physics in computer graphics has been a trend, could we apply this to leaf simulations? Could we distill the information in numerical simulations to create a performant visualization for the game use case? How realistic and performant would a simulation making use of the empirical data from literature of (1) horizontal disc velocity over time (2) vertical disc velocity over time and (3) disc angular velocity over time simulate the falling trajectory of a leaf in air?
 
 = Methods
 
 == Obtaining a 3D Model for a Leaf
 
-An autumn elm leaf in OSU campus was collected and allowed to sit betwixt book pages for one week. The resulting leaf was placed in a high-quality printer scanner. The picture was imported into Blender, where the edge outlines of the leaf were manually traced, the majority of the leaf's surface area filled in via _grid fill_, and the remainder manually adjusted to ensure there were no crossing edges in the resulting mesh.
+An autumn elm leaf in OSU campus was collected and allowed to sit between book pages for one week. The resulting leaf was placed in a high-quality printer scanner. The picture was imported into Blender, where the edge outlines of the leaf were manually traced, the majority of the leaf's surface area filled in via _grid fill_, and the remainder manually adjusted to ensure there were no crossing edges in the resulting mesh.
+
+(ADD IMAGE OF LEAF AND BLENDER LEAF HERE)
 
 == Gathering of Empirical Data for Simulation
 
-One-shot, high-precision time-series values for horizontal velocity, vertical velocity, and angular velocity relative to the trajectory plane for the periodic fluttering and tumbling regimes were requested from one of the authors of @dusek.
+One-shot, high-precision time-series values for horizontal velocity, vertical velocity, and angular velocity relative to the trajectory plane for the periodic fluttering and tumbling regimes were requested and obtained from one of the authors of @dusek.
 
-Each representative data point on the Re / $I*$ phase space had the parameters as shown in @phase_space.
+Each representative data point on the Re / $I^*$ phase space had the parameters as shown in @phase_space.
 
 #figure(
   table(
@@ -68,11 +70,11 @@ Each representative data point on the Re / $I*$ phase space had the parameters a
     [Tumbling (low inertia)], [0.5], [160],
     [Tumbling (high inertia)], [10], [150],
   ),
-  caption: [Parameters for two scenarios which represent two leaf motion regimes. Simulation data provided by @dusek. $m*$ is the non-dimensionalized mass, and G is the galileo number (see below for explanations).],
+  caption: [Parameters for two scenarios which represent two leaf motion regimes. Simulation data provided by @dusek. $m^*$ is the dimensionless mass, and G is the galileo number (see below for explanations).],
 ) <phase_space>
 
 
-$m^*$ is known as the "non-dimensionalized mass", defined as
+$m^*$ is known as the "dimensionless mass", defined as
 $
   m^* = m/(rho d^3)
 $
@@ -80,7 +82,7 @@ where $m$ represents the mass of the object, $rho$ represents the density of the
 
 $G$ is known as the Galileo Number. Similar to the Reynolds Number commonly used in fluid mechanics, it scales with the length or volume of the object, and scales inversely with the viscocity of the fluid. A higher Galileo Number implies that a falling object is less affected by the turbulence of fluid.
 
-For the stable regime, no empirical data was found, and the the leaf is was assumed to be at terminal velocity in the fluid with a constant velocity equal to the average velocity of the fluttering regime provided in @phase_space in the direction of gravity.
+For the stable regime, no empirical data was used. Instead, the leaf was assumed to be at terminal velocity in the fluid with a constant velocity equal to the average velocity of the fluttering regime provided in @phase_space in the direction of gravity.
 
 The chaotic regime, a combination of fluttering and tumbling, was not evaluated in this paper, due to difficulties establishing a valid quantitative analysis method. Look to the discussion for further details.
 
