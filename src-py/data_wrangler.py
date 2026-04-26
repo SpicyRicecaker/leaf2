@@ -19,7 +19,7 @@ class DiscTransformPredictor:
         self.phi_0 = 0
         
         try:
-            mat_dict = sio.loadmat(path)
+            mat_dict = sio.loadmat(f'data/{path}')
             data_dict = {k: v for k, v in mat_dict.items() if not k.startswith('__')}
             
             for key, value in data_dict.items():
@@ -117,6 +117,8 @@ class DiscTransformPredictor:
             if i_debug_count % 100 == 0:
                 print(f'still binary searching jumps: {i_debug_count}, i_L: {i_L}, i_R: {i_R}')
             i_test = i_L + (i_R - i_L) // 2
+            # if t - 0 < 0.0001:
+                # print(self.df['t'][i_test], self.df['t'][i_test + 1])
             if t >= self.df['t'][i_test] and t <= self.df['t'][i_test + 1]:
                 i_interval_begin = i_test
                 i_interval_end = i_test + 1

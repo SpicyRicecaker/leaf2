@@ -274,7 +274,7 @@ def compute_leaf_model_matrix(t: float, predictor, i) -> np.ndarray:
             pyrr.matrix44.multiply(rx, rx_correct)
         )
     )
-
+ 
     model = pyrr.matrix44.multiply(rotation, translation)
     return model
 
@@ -302,13 +302,13 @@ def main():
     glViewport(0, 0, WIN_W, WIN_H)
     glClearColor(0.53, 0.81, 0.92, 1.0)
 
-    program = build_program("shaders/leaf.vert", "shaders/leaf.frag")
+    program = build_program("../shaders/leaf.vert", "../shaders/leaf.frag")
 
     # --- load FBX ---
-    vao, vbo, ebo, index_count = load_glb_mesh("american_elm.glb")  # <-- your fbx filename here
+    vao, vbo, ebo, index_count = load_glb_mesh("../art/american_elm.glb")  # <-- your fbx filename here
 
     # --- load texture ---
-    tex_id = load_texture("american elm front flat.jpg")  # <-- your path
+    tex_id = load_texture(os.path.abspath("art/american elm front flat.jpg"))  # <-- your path
 
     # --- uniforms ---
     u_model       = glGetUniformLocation(program, "model")
