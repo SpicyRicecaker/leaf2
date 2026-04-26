@@ -157,6 +157,79 @@ def load_glb_mesh(glb_path: str) -> tuple[int, int, int, int]:
 
     return vao, vbo, ebo, len(indices)
 
+def load_quad() -> tuple[int, int, int, int]:
+    # --- upload ---
+    vao = glGenVertexArrays(1)
+    vbo = glGenBuffers(1)
+    ebo = glGenBuffers(1)
+
+    glBindVertexArray(vao)
+
+    positions = np.array([
+        [ 1,  1, 0], #0
+        [-1,  1, 0], #1
+        [-1, -1, 0], #2
+        [ 1 ,-1, 0], #3
+        [ 1,  1, 0], #4 
+        [-1,  1, 0], #5
+        [-1, -1, 0], #6
+        [ 1 ,-1, 0], #7
+    ], dtype=np.float32)
+
+    normals = np.array([
+        [ 1, 0, 0],
+        [ 1, 0, 0],
+        [ 1, 0, 0],
+        [ 1, 0, 0],
+        [-1, 0, 0],
+        [-1, 0, 0],
+        [-1, 0, 0],
+        [-1, 0, 0],
+    ], dtype=np.float32)
+
+    uvs = np.array([
+        [ 1, 0],
+        [ 0, 0],
+        [ 0, 1],
+        [ 1, 1],
+        [ 1, 0],
+        [ 0, 0],
+        [ 0, 1],
+        [ 1, 1],        
+    ], dtype=np.float32)
+
+    indices = np.array([
+        0, 1, 2,
+        2, 3, 0,
+        0+4, 1+4, 2+4,
+        2+4, 3+4, 0+4,
+    ], dtype=np.int32)
+
+    vertex_data = np.hstack([positions, normals, uvs])
+        
+    glBindBuffer(GL_ARRAY_BUFFER, vbo)
+    glBufferData(GL_ARRAY_BUFFER, vertex_data.nbytes, vertex_data, GL_STATIC_DRAW)
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
+
+    stride = 8 * ctypes.sizeof(ctypes.c_float)
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride,
+                          ctypes.c_void_p(0))
+    glEnableVertexAttribArray(0)
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride,
+                          ctypes.c_void_p(3 * ctypes.sizeof(ctypes.c_float)))
+    glEnableVertexAttribArray(1)
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride,
+                          ctypes.c_void_p(6 * ctypes.sizeof(ctypes.c_float)))
+    glEnableVertexAttribArray(2)
+
+    glBindVertexArray(0)
+
+    return vao, vbo, ebo, len(indices)
 
 # ---------------------------------------------------------------------------
 # Texture loader
@@ -305,7 +378,8 @@ def main():
     program = build_program("../shaders/leaf.vert", "../shaders/leaf.frag")
 
     # --- load FBX ---
-    vao, vbo, ebo, index_count = load_glb_mesh("../art/american_elm.glb")  # <-- your fbx filename here
+    vao_l, vbo_l, ebo_l, index_count_l = load_glb_mesh("../art/american_elm.glb")  # <-- your fbx filename here
+    vao_q, vbo_q, ebo_q, index_count_q = load_quad()
 
     # --- load texture ---
     tex_id = load_texture(os.path.abspath("art/american elm front flat.jpg"))  # <-- your path
@@ -387,7 +461,7 @@ def main():
         model = compute_leaf_model_matrix(t, disc_transform_predictor_1, i_x)
         view  = camera.get_view_matrix()
 
-        glClear(GL_DEPTH_BUFFER_BIT)  # added COLOR_BUFFER_BIT
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)  # added COLOR_BUFFER_BIT
         glUseProgram(program)
 
         # bind texture to unit 0
@@ -402,17 +476,21 @@ def main():
         glUniform3fv(u_lightColor, 1, LIGHT_COLOR)
         glUniform3fv(u_viewPos,    1, camera.position.astype(np.float32))
 
-        glBindVertexArray(vao)
-        glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, None)
+        glBindVertexArray(vao_l)
+        glDrawElements(GL_TRIANGLES, index_count_l, GL_UNSIGNED_INT, None)
+        glBindVertexArray(0)
+
+        glBindVertexArray(vao_q)
+        glDrawElements(GL_TRIANGLES, index_count_q, GL_UNSIGNED_INT, None)
         glBindVertexArray(0)
 
         i_x += 1
 
         pygame.display.flip()
 
-    glDeleteVertexArrays(1, [vao])
-    glDeleteBuffers(1, [vbo])
-    glDeleteBuffers(1, [ebo])
+    glDeleteVertexArrays(1, [vao_l])
+    glDeleteBuffers(1, [vbo_l])
+    glDeleteBuffers(1, [ebo_l])
     glDeleteTextures(1, [tex_id])
     glDeleteProgram(program)
     graph.stop()
