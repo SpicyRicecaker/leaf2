@@ -40,12 +40,12 @@ void main()
     float spec    = pow(max(dot(norm, halfDir), 0.0), shininess);
     vec3  specular = specularStrength * spec * lightColor;
 
-    vec3 texColor = texture(leafTexture, TexCoord).rgb;
+    vec4 texColor = texture(leafTexture, TexCoord);
 
     // lighten back face
     // if (isBack) texColor = mix(texColor, vec3(1.0), 0.35);
     if (isBack) texColor = texColor;
 
-    vec3 result = (ambient + diffuse + specular) * texColor;
-    FragColor   = vec4(result, 1.0);
+    vec3 result = (ambient + diffuse + specular) * texColor.rgb;
+    FragColor   = vec4(result, texColor.a);
 }

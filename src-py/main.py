@@ -170,10 +170,10 @@ def load_quad() -> tuple[int, int, int, int]:
         [-1,  1, 0], #1
         [-1, -1, 0], #2
         [ 1 ,-1, 0], #3
-        [ 1,  1, 0], #4 
-        [-1,  1, 0], #5
-        [-1, -1, 0], #6
-        [ 1 ,-1, 0], #7
+        #[ 1,  1, 0], #4 
+        #[-1,  1, 0], #5
+        #[-1, -1, 0], #6
+        #[ 1 ,-1, 0], #7
     ], dtype=np.float32)
 
     normals = np.array([
@@ -181,10 +181,10 @@ def load_quad() -> tuple[int, int, int, int]:
         [ 1, 0, 0],
         [ 1, 0, 0],
         [ 1, 0, 0],
-        [-1, 0, 0],
-        [-1, 0, 0],
-        [-1, 0, 0],
-        [-1, 0, 0],
+        #[-1, 0, 0],
+        #[-1, 0, 0],
+        #[-1, 0, 0],
+        #[-1, 0, 0],
     ], dtype=np.float32)
 
     uvs = np.array([
@@ -192,17 +192,17 @@ def load_quad() -> tuple[int, int, int, int]:
         [ 0, 0],
         [ 0, 1],
         [ 1, 1],
-        [ 1, 0],
-        [ 0, 0],
-        [ 0, 1],
-        [ 1, 1],        
+        #[ 1, 0],
+        #[ 0, 0],
+        #[ 0, 1],
+        #[ 1, 1],        
     ], dtype=np.float32)
 
     indices = np.array([
         0, 1, 2,
         2, 3, 0,
-        0+4, 1+4, 2+4,
-        2+4, 3+4, 0+4,
+        #2+4, 1+4, 0+4,
+        #0+4, 3+4, 2+4,
     ], dtype=np.int32)
 
     vertex_data = np.hstack([positions, normals, uvs])
@@ -240,7 +240,7 @@ def load_texture(image_path: str) -> int:
 
     surface = pygame.image.load(image_path)
     surface = pygame.transform.flip(surface, False, False)  # FlipUVs in assimp handles this
-    img_data = pygame.image.tostring(surface, "RGB", False)
+    img_data = pygame.image.tostring(surface, "RGBA", False)
     w, h     = surface.get_size()
 
     tex_id = glGenTextures(1)
@@ -251,8 +251,8 @@ def load_texture(image_path: str) -> int:
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0,
-                 GL_RGB, GL_UNSIGNED_BYTE, img_data)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, img_data)
     glGenerateMipmap(GL_TEXTURE_2D)
 
     glBindTexture(GL_TEXTURE_2D, 0)
@@ -374,6 +374,8 @@ def main():
     glDisable(GL_CULL_FACE)
     glViewport(0, 0, WIN_W, WIN_H)
     glClearColor(0.53, 0.81, 0.92, 1.0)
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     program = build_program("../shaders/leaf.vert", "../shaders/leaf.frag")
 
@@ -382,7 +384,8 @@ def main():
     vao_q, vbo_q, ebo_q, index_count_q = load_quad()
 
     # --- load texture ---
-    tex_id = load_texture(os.path.abspath("art/american elm front flat.jpg"))  # <-- your path
+    tex_id_l = load_texture(os.path.abspath("art/american elm front flat.jpg"))  # <-- your path
+    tex_id_q = load_texture(os.path.abspath("art/transparent_star.png"))  # <-- your path
 
     # --- uniforms ---
     u_model       = glGetUniformLocation(program, "model")
@@ -466,7 +469,7 @@ def main():
 
         # bind texture to unit 0
         glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, tex_id)
+        glBindTexture(GL_TEXTURE_2D, tex_id_q)
         glUniform1i(u_leafTexture, 0)
 
         glUniformMatrix4fv(u_model,      1, GL_FALSE, model)
@@ -476,9 +479,9 @@ def main():
         glUniform3fv(u_lightColor, 1, LIGHT_COLOR)
         glUniform3fv(u_viewPos,    1, camera.position.astype(np.float32))
 
-        glBindVertexArray(vao_l)
-        glDrawElements(GL_TRIANGLES, index_count_l, GL_UNSIGNED_INT, None)
-        glBindVertexArray(0)
+        # glBindVertexArray(vao_l)
+        # glDrawElements(GL_TRIANGLES, index_count_l, GL_UNSIGNED_INT, None)
+        # glBindVertexArray(0)
 
         glBindVertexArray(vao_q)
         glDrawElements(GL_TRIANGLES, index_count_q, GL_UNSIGNED_INT, None)
@@ -491,7 +494,7 @@ def main():
     glDeleteVertexArrays(1, [vao_l])
     glDeleteBuffers(1, [vbo_l])
     glDeleteBuffers(1, [ebo_l])
-    glDeleteTextures(1, [tex_id])
+    glDeleteTextures(1, [tex_id_l])
     glDeleteProgram(program)
     graph.stop()
     pygame.quit()
