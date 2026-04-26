@@ -484,7 +484,7 @@ def main():
         # glBindVertexArray(0)
 
         glBindVertexArray(vao_q)
-        glDrawElements(GL_TRIANGLES, index_count_q, GL_UNSIGNED_INT, None)
+        glDrawElementsInstanced(GL_TRIANGLES, index_count_q, GL_UNSIGNED_INT, None, 99)
         glBindVertexArray(0)
 
         i_x += 1
