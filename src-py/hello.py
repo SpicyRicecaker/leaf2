@@ -2,9 +2,6 @@ from data_wrangler import DiscTransformPredictor
 import matplotlib.pyplot as py
 import numpy as np
 
-def f(x):
-    return np.sin(x)
-
 def __main__():
     df = DiscTransformPredictor('data_m01_G90.mat', 0).df
     print(df.columns, 0)
@@ -14,31 +11,26 @@ def __main__():
     # f(x) = a(x) + b(x)
     # a(x) =
 
-    n = 5
-    sinfreqxd = [0, 0, 0, 0, 0]
-    freq = [0.5, 1, 1.5, 2]
-
+    n = 100
+    sinfreqxd = []
+    cosfreqxd = []
     # .5, 1, 1.5, 2
     # over range T
-    T = 2 * np.pi
-    steps = 10
-    dx = T / steps
+    T = df.t[len(df.t) - 1] - df.t[0]
+    
     for i in range(n):
         factor = (i / 2) * ((2 * np.pi) / T)
-        cumsum = 0
-        for j in range(steps):
-            x = (j * dx)
-            cumsum += np.sin(x * factor) * f(x) * dx
-        cumsum *= (2 / T)
-        sinfreqxd[i] = cumsum
+        sin_sum = 0
+        cos_sum = 0
+        for j in range(len(df.t) - 1):
+            dx = df.t[j + 1] - df.t[j]
+            x  = df.t[j]
+            sin_sum += np.sin(x * factor) * df.ux[j] * dx
+            cos_sum += np.cos(x * factor) * df.ux[j] * dx
+        sinfreqxd.append(sin_sum * (2 / T))
+        cosfreqxd.append(cos_sum * (2 / T))
 
     print(sinfreqxd)
-        
-    # sin(x / (2pi * T))
-
-    
-
-    
-    return
+    print(cosfreqxd)
 
 __main__()
