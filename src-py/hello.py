@@ -10,27 +10,19 @@ def __main__():
 
     # f(x) = a(x) + b(x)
     # a(x) =
-
-    n = 100
-    sinfreqxd = []
-    cosfreqxd = []
-    # .5, 1, 1.5, 2
-    # over range T
-    T = df.t[len(df.t) - 1] - df.t[0]
-    
-    for i in range(n):
-        factor = (i / 2) * ((2 * np.pi) / T)
-        sin_sum = 0
-        cos_sum = 0
-        for j in range(len(df.t) - 1):
-            dx = df.t[j + 1] - df.t[j]
-            x  = df.t[j]
-            sin_sum += np.sin(x * factor) * df.ux[j] * dx
-            cos_sum += np.cos(x * factor) * df.ux[j] * dx
-        sinfreqxd.append(sin_sum * (2 / T))
-        cosfreqxd.append(cos_sum * (2 / T))
-
-    print(sinfreqxd)
-    print(cosfreqxd)
+    from scipy.fft import fft, fftfreq
+    import numpy as np
+    # Number of sample points
+    N = 600
+    # sample spacing
+    T = 1.0 / 800.0
+    x = np.linspace(0.0, N*T, N, endpoint=False)
+    y = np.sin(50.0 * 2.0*np.pi*x) + 0.5*np.sin(80.0 * 2.0*np.pi*x)
+    yf = fft(y)
+    xf = fftfreq(N, T)[:N//2]
+    import matplotlib.pyplot as plt
+    plt.plot(xf, 2.0/N * np.abs(yf[0:N//2]))
+    plt.grid()
+    plt.show()
 
 __main__()
