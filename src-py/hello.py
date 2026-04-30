@@ -9,30 +9,37 @@ def __main__():
     
     # number of nonuniform points
     N = len(df.t)
+
+    ts = np.array([df.t[i] for i in range(N)])
+    uxs = np.array([df.ux[i] + 0J for i in range(N)])
+    
     
     # the nonuniform points
     # x = 2 * np.pi * np.random.uniform(size=M)
-    T = df.t[N-1] - df.t[0]
+    df = None
     
-    x = df.t
+    T = ts[N-1] - uxs[0]
+    
+    x = ts
     
     # their complex strengths
     # c = (np.random.standard_normal(size=M)
     # + 1J * np.random.standard_normal(size=M))
     
-    plt.plot(df.t, df.ux)
+    #plt.plot(df.t, df.ux)
+    #plt.show()
     
-    c = df.ux
+    c = uxs
     
-    # desired number of Fourier modes (uniform outputs)
-    N = 1200
+    # # desired number of Fourier modes (uniform outputs)
+    N = 200
     
-    # calculate the transform
+    # # calculate the transform
     f = finufft.nufft1d1(x, c, (N, ))
-    print(f)
+    # print(f)
     
-    # a = np.arange(- N // 2, (N // 2 - 1) + 1, 1)
-    # print(a)
+    # # a = np.arange(- N // 2, (N // 2 - 1) + 1, 1)
+    # # print(a)
 
     # plt.plot(a, f)
     # plt.show()
