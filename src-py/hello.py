@@ -5,21 +5,24 @@ import finufft
 
 def __main__():
     df = DiscTransformPredictor('data_m01_G90.mat', 0).df
-    print(df.columns, 0)
+    # print(df.columns, 0)
     
     # number of nonuniform points
-    N = 1200
+    N = len(df.t)
     
     # the nonuniform points
     # x = 2 * np.pi * np.random.uniform(size=M)
-    T = 1
+    T = df.t[N-1] - df.t[0]
     
-    x = np.linspace(0, T, N)
+    x = df.t
     
     # their complex strengths
     # c = (np.random.standard_normal(size=M)
     # + 1J * np.random.standard_normal(size=M))
-    c = np.sin(50 * x * 2 * np.pi / T) + np.cos(50 * x * 2 * np.pi / T) * 0J + 0.5 * np.sin(80 * x * 2 * np.pi) + 0.5 * np.cos(80 * x * 2 * np.pi) * 0J
+    
+    plt.plot(df.t, df.ux)
+    
+    c = df.ux
     
     # desired number of Fourier modes (uniform outputs)
     N = 1200
@@ -33,7 +36,7 @@ def __main__():
 
     # plt.plot(a, f)
     # plt.show()
-    plt.plot(np.linspace(0, N // 2 / (2 * np.pi), N // 2), f[N // 2:])
+    plt.plot(np.linspace(0, N // 2 / (2 * np.pi) * T, N // 2), f[N // 2:])
     plt.show()
     
 
