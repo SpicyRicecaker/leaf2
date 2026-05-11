@@ -410,7 +410,7 @@ def main():
     clock_obj      = pygame.time.Clock()
 
     files = ["data_stable.mat", "data_m01_G90.mat", "data_m05_G160.mat", "data_m10_G150.mat"]
-    disc_transform_predictor_1 = DiscTransformPredictor(files[2], 1 / 60)
+    disc_transform_predictor_1 = DiscTransformPredictor(files[1], 1 / 60)
     i_x = 0
 
     graph = RealtimeGraph(clock.get_time, disc_transform_predictor_1)

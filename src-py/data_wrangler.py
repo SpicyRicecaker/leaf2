@@ -106,20 +106,23 @@ class DiscTransformPredictor:
         length = len(self.df['t'])
         assert length >= 2, "Lazy algorithm 2 or greater length"
         i_L = 0
-        i_R = length - 1 - 1
+        i_R = length - 1
 
         i_interval_begin = -999
         i_interval_end = -999
 
         i_debug_count = 0
+        epsilon = 1e-3
         while i_L != i_R:
             i_debug_count += 1
             if i_debug_count % 100 == 0:
                 print(f'still binary searching jumps: {i_debug_count}, i_L: {i_L}, i_R: {i_R}')
             i_test = i_L + (i_R - i_L) // 2
+            # print(f'comp {t} with {self.df['t'][i_test]} ({i_test}) and {self.df['t'][i_test + 1]} ({i_test + 1})')
+
             # if t - 0 < 0.0001:
                 # print(self.df['t'][i_test], self.df['t'][i_test + 1])
-            if t >= self.df['t'][i_test] and t <= self.df['t'][i_test + 1]:
+            if t >= self.df['t'][i_test] - epsilon and t <= self.df['t'][i_test + 1] + epsilon:
                 i_interval_begin = i_test
                 i_interval_end = i_test + 1
                 break
@@ -132,7 +135,7 @@ class DiscTransformPredictor:
                 i_R = i_test
                 continue
         
-        assert not (i_interval_begin == -999), f"Big error occurred: no matching interval for given t {t}"
+        assert not (i_interval_begin == -999), f"Big error occurred: no matching interval for given t {t}. len is {length}"
         
         res = lerp(self.df['t'][i_interval_begin], self.df['t'][i_interval_end], self.df[column][i_interval_begin], self.df[column][i_interval_end], t)
         return res
