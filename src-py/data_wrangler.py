@@ -67,7 +67,10 @@ class DiscTransformPredictor:
         acc = 0
         for _ in range(n):
             # todo, can use a better verlet algorithm here.
-            acc += self.column_at_t(t_current, column) * dt
+            val = self.column_at_t(t_current, column)
+            if column == 'ux' and True:
+                val = np.sin(t_current)
+            acc += val * dt
             t_current += dt
         
         return acc
