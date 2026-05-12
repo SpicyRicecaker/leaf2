@@ -2,15 +2,16 @@ from data_wrangler import DiscTransformPredictor
 import matplotlib.pyplot as plt
 import numpy as np
 import finufft
+import math
 
 
 def method2(dp):
     
     df = dp.df
     N = 10000
-    domain = [np.pi /4, 9*np.pi/4]
+    domain = [0, np.pi /4 + 2 * np.pi * 10]
     ts = np.linspace(domain[0], domain[1], N)
-    print(ts)
+    print(ts) 
     # uxs = np.array([dp.column_at_t(ts[i], 'ux') + 0J for i in range(N)])
     uxs = 0.5 * np.sin(ts) + 0.5 * np.cos(ts)
 
@@ -32,7 +33,11 @@ def method2(dp):
     _ = plt.plot(freq, 2 * sp.real / N, freq, 2 * sp.imag / N)
     plt.show()
     plt.plot(ts, uxs)
-    plt.plot(ts, .710 * np.cos(.16 * 2 * np.pi * ts - domain[0]))
+
+    amplitude = np.sqrt(0.6411**2 + 0.26**2)
+    angle = np.atan2(-0.26, 0.6411)
+
+    plt.plot(ts, amplitude * np.cos(.157 * 2 * np.pi * ts - domain[0] + angle))
     plt.show()
     
 
