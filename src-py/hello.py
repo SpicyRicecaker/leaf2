@@ -6,13 +6,13 @@ import math
 
 
 def method2(dp):
-
     df = dp.df
     N = 10000
     # domain = [df.t[0], df.t[len(df.t)-1]]
-    domain = [3.1674, 18.7954]
+    domain = [14.2, 79.9]
     ts = np.linspace(domain[0], domain[1], N)
     print(ts)
+    
     uxs = np.array([dp.column_at_t(ts[i], "ux") + 0j for i in range(N)])
     # uxs = 0.5 * np.sin(ts) + 0.5 * np.cos(ts)
 
@@ -31,20 +31,32 @@ def method2(dp):
     # phase shift is around
     # 0.013? 0.005?
     # 0.005
-    _ = plt.plot(freq, 2 * sp.real / N, freq, 2 * sp.imag / N)
+    real = 2 * sp.real / N
+    imag = 2 * sp.imag / N
+    _ = plt.plot(freq, real, freq, imag)
     plt.show()
-    plt.plot(ts, uxs)
 
-    X = [1 + 0.070j, 0.1 - 0.0175j]
-    f = [0.382, 1.154]
+    X = []
+    f = []
+    for i in range(len(freq)):
+        if freq[i] >= 0 and real[i] > 0.01:
+            X.append((real[i] if freq[i] >= 0.06 else real[i] / 2) + (imag[i] * 1J if freq[i] >= 0.06 else imag[i] / 2 * 1J))
+            # f.append(0 if freq[i] <= 0.02 else freq[i])
+            f.append(freq[i])
+    f = np.array(f)
+    plt.plot(ts, uxs, label="dataset")
+    print(f'f {f}')
 
-    amplitudes = [np.sqrt(X[i] * X[i].conjugate()) for i in range(len(X))]
-    angles = [np.atan2(X[i].imag, X[i].real) for i in range(len(X))]
+
+    amplitudes = np.array([np.sqrt(X[i] * X[i].conjugate()) for i in range(len(X))])
+    print(f'amplitudes {amplitudes}')
+    angles = np.array([np.atan2(X[i].imag, X[i].real) for i in range(len(X))])
     plt.plot(
         ts,
-        amplitudes[0] * np.cos(f[0] * 2 * np.pi * (ts - domain[0]) + angles[0])
-        + amplitudes[1] * np.cos(f[1] * 2 * np.pi * (ts - domain[0]) + angles[1]),
+        sum([amplitudes[i] * np.cos(f[i] * 2 * np.pi * (ts - domain[0]) + angles[i])for i in range(len(amplitudes))]),
+        label='distilled'
     )
+    plt.legend()
     plt.show()
 
 
@@ -94,7 +106,7 @@ def method1(dp):
 
 
 def __main__():
-    dp = DiscTransformPredictor("data_m01_G90.mat", 0)
+    dp = DiscTransformPredictor("data_m05_G160.mat", 0)
     # print(df.columns, 0)
     method2(dp)
 
