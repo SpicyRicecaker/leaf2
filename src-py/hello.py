@@ -9,11 +9,12 @@ def method2(dp):
     
     df = dp.df
     N = 10000
-    domain = [0, np.pi /4 + 2 * np.pi * 10]
+    #domain = [df.t[0], df.t[len(df.t)-1]]
+    domain = [3.1674, 18.7954]
     ts = np.linspace(domain[0], domain[1], N)
     print(ts) 
-    # uxs = np.array([dp.column_at_t(ts[i], 'ux') + 0J for i in range(N)])
-    uxs = 0.5 * np.sin(ts) + 0.5 * np.cos(ts)
+    uxs = np.array([dp.column_at_t(ts[i], 'ux') + 0J for i in range(N)])
+    #uxs = 0.5 * np.sin(ts) + 0.5 * np.cos(ts)
 
     sp = np.fft.fft(uxs)
     d = (domain[1] - domain[0])/N
@@ -34,16 +35,15 @@ def method2(dp):
     plt.show()
     plt.plot(ts, uxs)
 
-    amplitude = np.sqrt(0.6411**2 + 0.26**2)
-    angle = np.atan2(-0.26, 0.6411)
-
-    plt.plot(ts, amplitude * np.cos(.157 * 2 * np.pi * ts - domain[0] + angle))
+    # amplitude = np.sqrt(0.6411**2 + 0.26**2)
+    # angle = np.atan2(-0.26, 0.6411)
+    # plt.plot(ts, amplitude * np.cos(.157 * 2 * np.pi * ts - domain[0] + angle))
     plt.show()
     
 
 def method1(dp):
     df = dp.df
-  # number of nonuniform points
+    # number of nonuniform points
     N = len(df.t)
 
     ts = np.array([df.t[i] for i in range(N)])

@@ -329,16 +329,35 @@ def compute_leaf_model_matrix(t: float, predictor, i) -> np.ndarray:
     y = predictor.z(i) * 2.5
 
     translation = pyrr.matrix44.create_from_translation(
-        pyrr.Vector3([x, y, -50]), dtype=np.float32)
+        pyrr.Vector3([x, y, -15]), dtype=np.float32)
 
-    phi = predictor.phi(i)
+    phi = predictor.phi(i) 
 
+    opengl_x_axis = np.array([1, 0, 0])
+    opengl_y_axis = np.array([0, 0, 1])
+    opengl_z_axis = np.array([0, 1, 0])
     # Blender Z-up → OpenGL Y-up correction: rotate -90 deg around X
-    rx_correct = pyrr.matrix44.create_from_x_rotation(np.radians(0), dtype=np.float32)
+    rx_correct = pyrr.matrix44.create_from_axis_rotation(
+        opengl_x_axis,
+        np.radians(-90),
+        dtype=np.float32
+    )
 
-    rx    = pyrr.matrix44.create_from_x_rotation(0, dtype=np.float32)
-    ry    = pyrr.matrix44.create_from_y_rotation(0, dtype=np.float32)
-    rz    = pyrr.matrix44.create_from_z_rotation(phi, dtype=np.float32)
+    rx = pyrr.matrix44.create_from_axis_rotation(
+        opengl_x_axis,
+        0,
+        dtype=np.float32
+    )
+    ry = pyrr.matrix44.create_from_axis_rotation(
+        opengl_y_axis,
+        0,
+        dtype=np.float32
+    )
+    rz = pyrr.matrix44.create_from_axis_rotation(
+        opengl_z_axis,
+        phi,
+        dtype=np.float32
+    )
 
     rotation = pyrr.matrix44.multiply(
         rz,
@@ -484,7 +503,7 @@ def main():
         # glBindVertexArray(0)
 
         glBindVertexArray(vao_q)
-        glDrawElementsInstanced(GL_TRIANGLES, index_count_q, GL_UNSIGNED_INT, None, 99)
+        glDrawElementsInstanced(GL_TRIANGLES, index_count_q, GL_UNSIGNED_INT, None, 1)
         glBindVertexArray(0)
 
         i_x += 1
