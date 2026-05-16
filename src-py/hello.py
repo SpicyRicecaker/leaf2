@@ -56,6 +56,20 @@ def read():
     print(df)
     print(complex(df['Amplitude (unit)'][0]) + 1)
 
+def find_i(A, v):
+    for i in range(len(A)):
+        if A[i] >= v:
+            return i
+    assert 1 == 2, "find i failed"
+
+def max_in_range(A, ia, ib):
+    return max([(i, A[i]) for i in range(len(A)) if i >= ia and i <= ib], key=lambda x: x[1])
+
+# print(max_in_range([1, 2, 3, 4, 3, 2, 1], 3-1, 5-1))
+# print(find_i([1, 2, 3, 4, 3, 2, 1], 4))
+
+# exit()
+
 def fourier_coefficients(dp, column, N=10000):
     df = dp.df
     # # domain = [df.t[0], df.t[len(df.t)-1]]
@@ -66,13 +80,20 @@ def fourier_coefficients(dp, column, N=10000):
         df = DiscTransformPredictor(file, 0).df
         
         i = 0
-        for column in ['omy', 'ux', 'uz']:
+        for column in ['omy', 'ux']:
             plt.figure(i) 
             amp = df[column]
             plt.title(f'{column} in {file}')
             if file == 'data_m01_G90.mat' and column == 'omy' or column == 'ux': #debug
-                pairs_of_data_cutoff[file][column]
-                plt.plot(, 5, 'ro') 
+                x = pairs_of_data_cutoff[file][column]
+                bl = x[0]#bounds left
+                br = x[1]
+                if True:
+                    it, m = max_in_range(amp, find_i(df.t, bl[0]), find_i(df.t, bl[1]))
+                    plt.plot(df.t[it], m, 'ro')
+                if True:
+                    it, m = max_in_range(amp, find_i(df.t, br[0]), find_i(df.t, br[1]))
+                    plt.plot(df.t[it], m, 'bo') 
             plt.plot(df.t, amp)
             i += 1
 
