@@ -11,17 +11,14 @@ def read():
     print(df)
     print(complex(df['Amplitude (unit)'][0]) + 1)
 
-read()
-
-def method2(dp):
+def fourier_coefficients(dp, column, N=10000):
     df = dp.df
-    N = 10000
     # domain = [df.t[0], df.t[len(df.t)-1]]
     domain = [14.2, 79.9]
     ts = np.linspace(domain[0], domain[1], N)
     print(ts)
     
-    uxs = np.array([dp.column_at_t(ts[i], "ux") + 0j for i in range(N)])
+    uxs = np.array([dp.column_at_t(ts[i], column) + 0j for i in range(N)])
     # uxs = 0.5 * np.sin(ts) + 0.5 * np.cos(ts)
 
     sp = np.fft.fft(uxs)
@@ -76,61 +73,14 @@ def method2(dp):
     key = 'ux'
     df.to_csv(f'data/{dp.path.split(".")[0]}_fourier_transposed_{key}.csv')
     #df2.to_hdf('my_data.h5', key='df2', mode='a')
-
-
     plt.legend()
-    plt.show()
-
-
-def method1(dp):
-    df = dp.df
-    # number of nonuniform points
-    N = len(df.t)
-
-    ts = np.array([df.t[i] for i in range(N)])
-    uxs = np.array([df.ux[i] + 0j for i in range(N)])
-
-    # the nonuniform points
-    # x = 2 * np.pi * np.random.uniform(size=M)
-    df = None
-
-    T = ts[N - 1] - ts[0]
-
-    x = ts
-
-    # their complex strengths
-    # c = (np.random.standard_normal(size=M)
-    # + 1J * np.random.standard_normal(size=M))
-
-    # plt.plot(df.t, df.ux)
-    # plt.show()
-
-    c = uxs
-
-    # # desired number of Fourier modes (uniform outputs)
-    N = 200
-
-    # # calculate the transform
-    f = finufft.nufft1d1(x, c, (N,))
-    # print(f)
-
-    # # a = np.arange(- N // 2, (N // 2 - 1) + 1, 1)
-    # # print(a)
-
-    # plt.plot(a, f)
-    # plt.show()
-    plt.plot(np.linspace(0, N // 2 / (2 * np.pi) * T, N // 2), f[N // 2 :])
-
-    # plt.plot(ts, uxs)
-    # plt.plot(ts, np.sin(2 * 2 * np.pi * ts))
-
     plt.show()
 
 
 def __main__():
     dp = DiscTransformPredictor("data_m05_G160.mat", 0)
     # print(df.columns, 0)
-    method2(dp)
+    fourier_coefficients(dp, column='ux')
 
 
 __main__()
