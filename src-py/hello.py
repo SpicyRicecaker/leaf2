@@ -3,7 +3,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import finufft
 import math
+import pandas as pd
 
+
+def read():
+    df = pd.read_csv('data/data_m05_G160_fourier_transposed_ux.csv')
+    print(df)
+    print(complex(df['Amplitude (unit)'][0]) + 1)
+
+read()
 
 def method2(dp):
     df = dp.df
@@ -58,6 +66,18 @@ def method2(dp):
         sum([amplitudes[i] * np.cos(f[i] * 2 * np.pi * (ts - domain[0]) + angles[i])for i in range(len(amplitudes))]),
         label='distilled'
     )
+
+    data = {
+      "Frequency (Hz)": f,
+      "Amplitude (unit)": amplitudes,
+      "Initial phase (rad)": angles
+    }
+    df = pd.DataFrame(data)
+    key = 'ux'
+    df.to_csv(f'data/{dp.path.split(".")[0]}_fourier_transposed_{key}.csv')
+    #df2.to_hdf('my_data.h5', key='df2', mode='a')
+
+
     plt.legend()
     plt.show()
 
