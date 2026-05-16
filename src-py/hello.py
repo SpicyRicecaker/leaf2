@@ -36,12 +36,14 @@ def method2(dp):
     _ = plt.plot(freq, real, freq, imag)
     plt.show()
 
+    amp_nonzero = 0.01
+    freq_nonzero = 0.01
     X = []
     f = []
     for i in range(len(freq)):
-        if freq[i] >= 0 and real[i] > 0.01:
-            X.append((real[i] if freq[i] >= 0.06 else real[i] / 2) + (imag[i] * 1J if freq[i] >= 0.06 else imag[i] / 2 * 1J))
-            # f.append(0 if freq[i] <= 0.02 else freq[i])
+        if freq[i] >= 0 and real[i] > amp_nonzero:
+            double_counting = 1 if freq[i] >= freq_nonzero else 1 / 2
+            X.append((real[i] + imag[i] * 1J) * double_counting)
             f.append(freq[i])
     f = np.array(f)
     plt.plot(ts, uxs, label="dataset")
