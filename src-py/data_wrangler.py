@@ -18,7 +18,7 @@ class DiscTransformPredictor:
         self.df = None
         self.phi_0 = 0
         
-        try:
+        try:1
             mat_dict = sio.loadmat(f'data/{path}')
             data_dict = {k: v for k, v in mat_dict.items() if not k.startswith('__')}
             
