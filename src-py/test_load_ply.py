@@ -50,4 +50,4 @@ def load_ply(ply_path: str) -> tuple[int, int, int, int]:
 
 
 
-load_ply(os.path.abspath('art/points.ply'))
+load_ply(os.path.abspath('art/elm_point_cloud.ply'))
