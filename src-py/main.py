@@ -13,6 +13,14 @@ import base64
 
 from OpenGL.GL import *
 from OpenGL.GL import shaders
+from OpenGL.GL.shaders import compileShader, compileProgram
+try:
+    from OpenGL.GL.NV.mesh_shader import glDrawMeshTasksNV
+except ImportError:
+    # Fallback to direct resolution if wrapper is missing
+    from ctypes import c_uint
+    import OpenGL.platform as p
+    glDrawMeshTasksNV = p.createExtensionFunction('glDrawMeshTasksNV', None, None, [c_uint, c_uint])
 
 from graph import RealtimeGraph
 from shared_clock import SharedClock
@@ -40,6 +48,64 @@ LIGHT_COLOR       = np.array([ 1.0,  1.0,  1.0], dtype=np.float32)
 # ---------------------------------------------------------------------------
 # Shader helpers  (unchanged)
 # ---------------------------------------------------------------------------
+mesh_shader_src = """
+#version 450
+#extension GL_NV_mesh_shader : require
+
+layout(local_size_x = 4) in;
+layout(triangles, max_vertices = 4, max_primitives = 2) out;
+
+// Simulated particle positions (4 particles)
+const vec3 positions[4] = vec3[](
+    vec3(-0.5,  0.5, 0.0),
+    vec3( 0.5,  0.5, 0.0),
+    vec3(-0.5, -0.5, 0.0),
+    vec3( 0.5, -0.5, 0.0)
+);
+
+// Quad vertex offsets relative to particle center
+const vec2 quad_offsets[4] = vec2[](
+    vec2(-0.1, -0.1),
+    vec2( 0.1, -0.1),
+    vec2(-0.1,  0.1),
+    vec2( 0.1,  0.1)
+);
+
+void main() {
+    uint particle_idx = gl_WorkGroupID.x;
+    uint vertex_idx = gl_LocalInvocationID.x;
+
+    // Determine the base position of this particle
+    vec3 center = positions[particle_idx];
+    
+    // Expand the vertex out into a quad
+    gl_MeshVerticesNV[vertex_idx].gl_Position = vec4(center.xy + quad_offsets[vertex_idx], center.z, 1.0);
+
+    // Only thread 0 needs to define the topology (indices) for the 2 triangles
+    if (vertex_idx == 0) {
+        gl_PrimitiveCountNV = 2;
+        
+        // Triangle 1: Top-Left, Bottom-Left, Top-Right (0, 1, 2)
+        gl_PrimitiveIndicesNV[0] = 0;
+        gl_PrimitiveIndicesNV[1] = 1;
+        gl_PrimitiveIndicesNV[2] = 2;
+        
+        // Triangle 2: Bottom-Left, Bottom-Right, Top-Right (1, 3, 2)
+        gl_PrimitiveIndicesNV[3] = 1;
+        gl_PrimitiveIndicesNV[4] = 3;
+        gl_PrimitiveIndicesNV[5] = 2;
+    }
+}
+"""
+
+# 2. Fragment Shader Source
+fragment_shader_src = """
+#version 450
+out vec4 fragColor;
+void main() {
+    fragColor = vec4(1., 0., 0., 1.0); // Pretty blue quads
+}
+"""
 
 def load_shader_source(path: str) -> str:
     here = os.path.dirname(os.path.abspath(__file__))
@@ -415,6 +481,29 @@ def main():
     u_viewPos     = glGetUniformLocation(program, "viewPos")
     u_leafTexture = glGetUniformLocation(program, "leafTexture")
 
+    # --- mesh shader --
+
+    GL_MESH_SHADER_NV = 0x9559
+    
+    mesh_shader = glCreateShader(GL_MESH_SHADER_NV)
+    glShaderSource(mesh_shader, mesh_shader_src)
+    glCompileShader(mesh_shader)
+    if not glGetShaderiv(mesh_shader, GL_COMPILE_STATUS):
+        print(glGetShaderInfoLog(mesh_shader))
+        return
+
+    frag_shader = compileShader(fragment_shader_src, GL_FRAGMENT_SHADER)
+    mesh_shader_program = glCreateProgram()
+    glAttachShader(mesh_shader_program, mesh_shader)
+    glAttachShader(mesh_shader_program, frag_shader)
+    glLinkProgram(mesh_shader_program)
+
+    # Setup a dummy VAO (Mesh shaders don't require VBOs if data is fetched/generated inside)
+    vao_mesh_shader = glGenVertexArrays(1)
+    glBindVertexArray(vao_mesh_shader)
+    # --- end mesh shader ---
+
+
     projection = pyrr.matrix44.create_perspective_projection_matrix(
         FOV_DEG, WIN_W / WIN_H, NEAR, FAR, dtype=np.float32)
 
@@ -504,6 +593,10 @@ def main():
 
         glBindVertexArray(vao_q)
         glDrawElementsInstanced(GL_TRIANGLES, index_count_q, GL_UNSIGNED_INT, None, 1)
+        glBindVertexArray(0)
+
+        glBindVertexArray(vao_mesh_shader)
+        glUseProgram(mesh_shader_program)
         glBindVertexArray(0)
 
         i_x += 1
