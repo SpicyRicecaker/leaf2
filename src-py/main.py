@@ -61,12 +61,16 @@ uniform mat4 view;
 uniform mat4 projection;
 
 // Simulated particle positions (4 particles)
-const vec3 positions[4] = vec3[](
-    vec3(-0.5,  0.5, 0.0),
-    vec3( 0.5,  0.5, 0.0),
-    vec3(-0.5, -0.5, 0.0),
-    vec3( 0.5, -0.5, 0.0)
-);
+// const vec3 positions[4] = vec3[](
+//     vec3(-0.5,  0.5, 0.0),
+//     vec3( 0.5,  0.5, 0.0),
+//     vec3(-0.5, -0.5, 0.0),
+//     vec3( 0.5, -0.5, 0.0)
+// );
+
+layout(binding = 0, std430) readonly buffer ssbo0 {
+    vec4 positions[];
+};
 
 // Quad vertex offsets relative to particle center
 const vec2 quad_offsets[4] = vec2[](
@@ -489,15 +493,25 @@ def main():
         u_viewPos    = glGetUniformLocation(program, "viewPos")
         u_leafTexture= glGetUniformLocation(program, "leafTexture")
     p1 = P1()
-    positions = np.array([
+
+    particle_positions = np.array([
         [-0.5, 0.5, 0.0],
         [0.5, 0.5, 0.0],
         [-0.5, -0.5, 0.0],
         [0.5, -0.5, 0.0]
     ])
-    print(positions)
-    exit()
+    particle_positions = np.pad(particle_positions, ((0, 0), (0, 1)))
     # --- mesh shader --
+    particles_buffer = glGenBuffers(1)
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_buffer)
+    glBufferData(
+        GL_SHADER_STORAGE_BUFFER,
+        # float is 4 bytes, 4 floats is 16 bytes, 16 bytes * length
+        particle_positions.nbytes,
+        particle_positions.data,
+        GL_DYNAMIC_DRAW #change to static copy
+    )
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
     class P2:
         GL_MESH_SHADER_NV = 0x9559
@@ -520,7 +534,6 @@ def main():
         glBindVertexArray(vao)
         # --- end mesh shader ---
     p2 = P2()
-
 
     projection = pyrr.matrix44.create_perspective_projection_matrix(
         FOV_DEG, WIN_W / WIN_H, NEAR, FAR, dtype=np.float32)
@@ -617,6 +630,7 @@ def main():
         glUseProgram(p2.program)
         glUniformMatrix4fv(p2.u_view,       1, GL_FALSE, view)
         glUniformMatrix4fv(p2.u_projection, 1, GL_FALSE, projection)
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_buffer)        # Draw 4 mesh tasks (workgroups). Each workgroup handles 1 particle.
         glDrawMeshTasksNV(0, 4)
         glBindVertexArray(0)
 
