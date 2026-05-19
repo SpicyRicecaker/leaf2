@@ -105,15 +105,26 @@ def main():
         [0.5, 0.5, 0.0],
         [-0.5, -0.5, 0.0],
         [0.5, -0.5, 0.0]
-    ])
+    ], dtype=np.float32)
     particles = np.pad(particles, ((0, 0), (0, 1)))
     glBufferData(
         GL_SHADER_STORAGE_BUFFER,
         # float is 4 bytes, 4 floats is 16 bytes, 16 bytes * length
-        16 * 4,
+        particles.nbytes,
         particles.data,
         GL_DYNAMIC_DRAW
     )
+
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_buffer)
+    ptr = glMapBufferRange(
+        GL_SHADER_STORAGE_BUFFER, 0, particles.nbytes, GL_MAP_READ_BIT
+    )
+    output_data = np.frombuffer(
+    (ctypes.c_float * len(particles) * 4).from_address(ptr), dtype=np.float32
+    )
+    print(output_data)
+    #exit()
 
     # Resolution handling for extension functions if needed
     try:
