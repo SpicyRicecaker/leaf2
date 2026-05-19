@@ -468,7 +468,7 @@ def main():
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-
+    # --- mesh shader --
     class P1:
         program = build_program("../shaders/leaf.vert", "../shaders/leaf.frag")
 
@@ -489,7 +489,14 @@ def main():
         u_viewPos    = glGetUniformLocation(program, "viewPos")
         u_leafTexture= glGetUniformLocation(program, "leafTexture")
     p1 = P1()
-
+    positions = np.array([
+        [-0.5, 0.5, 0.0],
+        [0.5, 0.5, 0.0],
+        [-0.5, -0.5, 0.0],
+        [0.5, -0.5, 0.0]
+    ])
+    print(positions)
+    exit()
     # --- mesh shader --
 
     class P2:
