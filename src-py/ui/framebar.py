@@ -3,7 +3,7 @@ import tkinter as tk
 import ctypes
 import ctypes.wintypes
 
-from shared_clock import SharedClock, FRAME_MS
+from . shared_clock import SharedClock, FRAME_MS
 
 # ---------------------------------------------------------------------------
 # Layout

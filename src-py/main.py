@@ -22,9 +22,9 @@ except ImportError:
     import OpenGL.platform as p
     glDrawMeshTasksNV = p.createExtensionFunction('glDrawMeshTasksNV', None, None, [c_uint, c_uint])
 
-from graph import RealtimeGraph
-from shared_clock import SharedClock
-from framebar import FrameBar
+from ui.graph import RealtimeGraph
+from ui.shared_clock import SharedClock
+from ui.framebar import FrameBar
 from data_wrangler import DiscTransformPredictor
 from types import SimpleNamespace
 
