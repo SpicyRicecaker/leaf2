@@ -67,13 +67,18 @@ def find_i(A, v):
             return i
     assert 1 == 2, "find i failed"
 
-def max_in_range(A, ia, ib):
-    return max([(i, A[i]) for i in range(len(A)) if i >= ia and i <= ib], key=lambda x: x[1])
+def i_max_in_i_range(A, ia, ib):
+    return max([(i, A[i]) for i in range(len(A)) if i >= ia and i <= ib], key=lambda x: x[1])[0]
 
 # print(max_in_range([1, 2, 3, 4, 3, 2, 1], 3-1, 5-1))
 # print(find_i([1, 2, 3, 4, 3, 2, 1], 4))
 
 # exit()
+
+def coord_of_max_val_in_interval(X, Y, D):
+    i =  i_max_in_i_range(Y, find_i(X, D[0]), find_i(X, D[1]))
+    return X[i], Y[i]
+
 
 def show_fourier_bounds():
     for file in ["data_m01_G90.mat", "data_m05_G160.mat", "data_m10_G150.mat"]:
@@ -89,11 +94,11 @@ def show_fourier_bounds():
                 bl = x[0]#bounds left
                 br = x[1]
                 if True:
-                    it, m = max_in_range(amp, find_i(df.t, bl[0]), find_i(df.t, bl[1]))
-                    plt.plot(df.t[it], m, 'ro')
+                    t, v = coord_of_max_val_in_interval(df.t, amp, bl)
+                    plt.plot(t, v, 'ro')
                 if True:
-                    it, m = max_in_range(amp, find_i(df.t, br[0]), find_i(df.t, br[1]))
-                    plt.plot(df.t[it], m, 'bo') 
+                    t, v = coord_of_max_val_in_interval(df.t, amp, br)
+                    plt.plot(t, v, 'bo') 
             plt.plot(df.t, amp)
             i += 1
 
@@ -168,8 +173,9 @@ def fourier_coefficients(dp, column, domain, N=10000):
 def __main__():
     dp = DiscTransformPredictor("data_m05_G160.mat", 0)
     # print(df.columns, 0)
-    fourier_coefficients(dp, column='ux', domain=[14.2, 79.9])
-    #show_fourier_bounds()
+    #for column in ['omy', 'ux', 'uz']:
+    #    fourier_coefficients(dp, column, domain=[14.2, 79.9])
+    show_fourier_bounds()
 
 
 __main__()
