@@ -610,7 +610,7 @@ def main():
         glUseProgram(p2.program) #---------------------------------------------------------
         glActiveTexture(GL_TEXTURE0)
 
-        glBindTexture(GL_TEXTURE_2D, p2.tex_id_q)
+        glBindTexture(GL_TEXTURE_2D, p1.tex_id_q)
         glUniform1i(p2.u_leafTexture, 0)
 
         glUniformMatrix4fv(p2.u_view,       1, GL_FALSE, view)

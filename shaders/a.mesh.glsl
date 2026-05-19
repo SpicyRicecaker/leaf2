@@ -4,6 +4,10 @@
 layout(local_size_x = 4) in;
 layout(triangles, max_vertices = 4, max_primitives = 2) out;
 
+out vec3[] FragPos;
+out vec3[] Normal;
+out vec2[] TexCoord;
+
 uniform mat4 view;
 uniform mat4 projection;
 
@@ -27,6 +31,13 @@ const vec2 quad_offsets[4] = vec2[](
     vec2( 0.1,  0.1)
 );
 
+const vec2 tex_coords[4] = vec2[](
+    vec2(0., 1.),
+    vec2(1., 1.),
+    vec2(0., 0.),
+    vec2(1., 0.)
+);
+
 void main() {
     uint particle_idx = gl_WorkGroupID.x;
     uint vertex_idx = gl_LocalInvocationID.x;
@@ -37,6 +48,10 @@ void main() {
     // Expand the vertex out into a quad
     vec4 pre_project = vec4(center.xy + quad_offsets[vertex_idx], center.z, 1.0);
     gl_MeshVerticesNV[vertex_idx].gl_Position = projection * view * pre_project;
+    
+    FragPos[vertex_idx] = pre_project.xyz; 
+    Normal[vertex_idx] = vec3(0, 0, 1);
+    TexCoord[vertex_idx] = tex_coords[vertex_idx];
 
     // Only thread 0 needs to define the topology (indices) for the 2 triangles
     if (vertex_idx == 0) {
