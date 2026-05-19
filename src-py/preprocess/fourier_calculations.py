@@ -137,8 +137,8 @@ def fourier_coefficients(dp, column, domain, N=10000):
 
     freq = np.fft.fftfreq(len(uxs), d)
 
-    # plt.plot(ts, uxs)
-    # plt.plot(ts, 0.5 * np.sin(0.4 * 2 * np.pi * ts) + 0.5 * np.sin(1.16 * 2 * np.pi * ts))
+    #plt.plot(ts, uxs)
+    #plt.plot(ts, 0.5 * np.sin(0.4 * 2 * np.pi * ts) + 0.5 * np.sin(1.16 * 2 * np.pi * ts))
     # 0.36 1.16
     # 0.185
     # -0.5
@@ -150,8 +150,8 @@ def fourier_coefficients(dp, column, domain, N=10000):
     imag = 2 * sp.imag / N
 
     # fourier spectrum
-    _ = plt.plot(freq, real, freq, imag)
-    plt.show()
+    #_ = plt.plot(freq, real, freq, imag)
+    #plt.show()
 
     amp_nonzero = 0.01
     freq_nonzero = 0.01
@@ -163,7 +163,7 @@ def fourier_coefficients(dp, column, domain, N=10000):
             X.append((real[i] + imag[i] * 1J) * double_counting)
             f.append(freq[i])
     f = np.array(f)
-    plt.plot(ts, uxs, label="dataset")
+    #plt.plot(ts, uxs, label="dataset")
     print(f'f {f}')
 
 
@@ -194,7 +194,7 @@ def process_all_fourier_coefficients():
         dp = DiscTransformPredictor(file, 0)
         df = dp.df
         
-        for column in ['uz']:
+        for column in ['ux']:
             Y = df[column]
             Ds = pairs_of_data_cutoff[file][column]
             D1 = Ds[0]#bounds left
@@ -205,7 +205,7 @@ def process_all_fourier_coefficients():
 
 
 def __main__():
-    show_fourier_bounds()
-    #process_all_fourier_coefficients()
+    #show_fourier_bounds()
+    process_all_fourier_coefficients()
 
 __main__()
