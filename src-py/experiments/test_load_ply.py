@@ -4,6 +4,22 @@ import os
 from plyfile import PlyData, PlyElement
 import matplotlib.pyplot as plt
 
+def plot_ply(points):
+    print(points)
+
+    l = -2
+    r = 2
+    x = np.linspace(l, r, 1000)   
+    y = np.linspace(l, r, 1000)        
+    z = np.linspace(l, r, 1000)        
+
+    #X,Y,Z = np.meshgrid(x, y, z)
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    ax.scatter(points[:, 0], points[:, 1], points[:, 2])
+    plt.show()
+
 def load_ply(ply_path: str) -> tuple[int, int, int, int]:
     # a = np.array([1, 2, 3])
     # b = np.array([4, 5, 6])
@@ -31,23 +47,8 @@ def load_ply(ply_path: str) -> tuple[int, int, int, int]:
             ),
             axis=1
         )
-        print(points)
-
-        l = -2
-        r = 2
-        x = np.linspace(l, r, 1000)   
-        y = np.linspace(l, r, 1000)        
-        z = np.linspace(l, r, 1000)        
-
-        #X,Y,Z = np.meshgrid(x, y, z)
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-
-        ax.scatter(plydata['vertex']['x'], plydata['vertex']['y'], plydata['vertex']['z'])
-        plt.show()
+        return points
 
 
-
-
-
-load_ply(os.path.abspath('art/elm_point_cloud.ply'))
+points = load_ply(os.path.abspath('art/elm_point_cloud.ply'))
+plot_ply(points)
