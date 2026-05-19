@@ -22,8 +22,8 @@ pairs_of_data_cutoff = {
             (18.37, 19.27)
         ],
         "uz": [
-            (1, 1),
-            (1, 1)
+            (0.56, 1.15),
+            (18.82, 19.36)
         ]
     },
     "data_m05_G160.mat": {
@@ -75,21 +75,16 @@ def max_in_range(A, ia, ib):
 
 # exit()
 
-def fourier_coefficients(dp, column, N=10000):
-    df = dp.df
-    # # domain = [df.t[0], df.t[len(df.t)-1]]
-    #domain = [14.2, 79.9]
-    
-
+def show_fourier_bounds():
     for file in ["data_m01_G90.mat", "data_m05_G160.mat", "data_m10_G150.mat"]:
         df = DiscTransformPredictor(file, 0).df
         
         i = 0
-        for column in ['omy', 'ux']:
+        for column in ['omy', 'ux', 'uz']:
             plt.figure(i) 
             amp = df[column]
             plt.title(f'{column} in {file}')
-            if file == 'data_m01_G90.mat' and column == 'omy' or column == 'ux': #debug
+            if file == 'data_m01_G90.mat': #debug
                 x = pairs_of_data_cutoff[file][column]
                 bl = x[0]#bounds left
                 br = x[1]
@@ -103,6 +98,12 @@ def fourier_coefficients(dp, column, N=10000):
             i += 1
 
         plt.show()
+
+def fourier_coefficients(dp, column, N=10000):
+    df = dp.df
+    # # domain = [df.t[0], df.t[len(df.t)-1]]
+    #domain = [14.2, 79.9]
+    
     # print(ts)
     
     # uxs = np.array([dp.column_at_t(ts[i], column) + 0j for i in range(N)])
@@ -168,6 +169,7 @@ def __main__():
     dp = DiscTransformPredictor("data_m05_G160.mat", 0)
     # print(df.columns, 0)
     fourier_coefficients(dp, column='ux')
+    #show_fourier_bounds()
 
 
 __main__()
