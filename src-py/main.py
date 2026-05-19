@@ -442,7 +442,7 @@ def main():
         vao_q, vbo_q, ebo_q, index_count_q = load_quad()
 
         # --- load texture ---
-        tex_id_l = load_texture(os.path.abspath("art/american elm front flat.jpg"))  # <-- your path
+        tex_id_l = load_texture(os.path.abspath("art/american elm front flat.png"))  # <-- your path
         tex_id_q = load_texture(os.path.abspath("art/transparent_star.png"))  # <-- your path
 
         # --- uniforms ---
@@ -610,7 +610,7 @@ def main():
         glUseProgram(p2.program) #---------------------------------------------------------
         glActiveTexture(GL_TEXTURE0)
 
-        glBindTexture(GL_TEXTURE_2D, p1.tex_id_q)
+        glBindTexture(GL_TEXTURE_2D, p1.tex_id_l)
         glUniform1i(p2.u_leafTexture, 0)
 
         glUniformMatrix4fv(p2.u_view,       1, GL_FALSE, view)

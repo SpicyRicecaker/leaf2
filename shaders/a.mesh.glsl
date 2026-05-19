@@ -11,6 +11,15 @@ out vec2[] TexCoord;
 uniform mat4 view;
 uniform mat4 projection;
 
+// assuming 1 unit is 1 meter
+const float H = 0.13970;
+const float W = 0.07785;
+
+const float U = 0.955905511811 * H;
+const float D = 0.044094488189 * H;
+const float L = 0.311624919717 * W;
+const float R = 0.688375080283 * W;
+
 // Simulated particle positions (4 particles)
 // const vec3 positions[4] = vec3[](
 //     vec3(-0.5,  0.5, 0.0),
@@ -23,12 +32,25 @@ layout(binding = 0, std430) readonly buffer ssbo0 {
     vec4 positions[];
 };
 
+// --------------------
+// |       |          |
+// |       |          |
+// |      u|          |
+// |       |          |
+// |       |          |
+// |  l    |    r     |
+// |=======x==========|
+// |       |          |
+// |      d|          |
+// |       |          |
+// --------------------
+
 // Quad vertex offsets relative to particle center
 const vec2 quad_offsets[4] = vec2[](
-    vec2(-0.1, -0.1),
-    vec2( 0.1, -0.1),
-    vec2(-0.1,  0.1),
-    vec2( 0.1,  0.1)
+    vec2(-L, -D), // bl
+    vec2( R, -D), // br
+    vec2(-L,  U), // tl
+    vec2( R,  U)  // tr
 );
 
 const vec2 tex_coords[4] = vec2[](
