@@ -442,6 +442,13 @@ def main():
     p1 = P1()
 
     particle_positions = load_ply(os.path.abspath("art/elm_point_cloud.ply"))
+    particle_positions = np.stack(
+        (particle_positions[:, 0],
+        particle_positions[:, 2],
+        -particle_positions[:, 1]),
+        axis=1,
+        dtype=np.float32
+    )
     particle_positions = np.pad(particle_positions, ((0, 0), (0, 1)))
     # --- mesh shader --
     particles_buffer = glGenBuffers(1)
