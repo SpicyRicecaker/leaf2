@@ -597,6 +597,7 @@ def main():
 
         glBindVertexArray(vao_mesh_shader)
         glUseProgram(mesh_shader_program)
+        glDrawMeshTasksNV(0, 4)
         glBindVertexArray(0)
 
         i_x += 1
