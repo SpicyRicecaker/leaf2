@@ -10,7 +10,11 @@ import finufft
 import math
 import pandas as pd
 
-
+# we need to time pair the omy with ux and uz for each, otherwise the 
+# movement will be unrealistic. This is fine though, as we can still do the 
+# fft analysis on separate domains, it's just that we must remember to offset 
+# the domains of the functions onto each other when we do the actual 
+# simulation
 pairs_of_data_cutoff = {
     "data_m01_G90.mat": {
         "omy": [
@@ -28,32 +32,48 @@ pairs_of_data_cutoff = {
     },
     "data_m05_G160.mat": {
         "omy": [
-            (1, 1),
-            (1, 1)
+            (11.8, 13.4),
+            (82.1, 84.0)
         ],
         "ux": [
-            (1, 1),
-            (1, 1)
+            (13.7, 14.5),
+            (79.5, 80.6)
         ],
         "uz": [
-            (1, 1),
-            (1, 1)
+            (13.9, 16.6),
+            (79.8, 82.7)
         ]
     },
+    # version that is like bent, from 3rd peak
     "data_m10_G150.mat": {
         "omy": [
-            (1, 1),
-            (1, 1)
+            (8.5, 10.4),
+            (116.2, 118.1)
         ],
         "ux": [
-            (1, 1),
-            (1, 1)
+            (6.7, 8.3),
+            (114.4, 116.2)
         ],
         "uz": [
-            (1, 1),
-            (1, 1)
+            (7.8, 8.8),
+            (115.5, 117.0)
         ]
     },
+    # version that isn't bent, ~40 sec
+    # "data_m10_G150.mat": {
+    #     "omy": [
+    #         (40.4, 42.0),
+    #         (116.2, 117.8)
+    #     ],
+    #     "ux": [
+    #         (41.2, 42.8),
+    #         (114.4, 116.2)
+    #     ],
+    #     "uz": [
+    #         (48.6, 49.6),
+    #         (115.2, 117.0)
+    #     ]
+    # },
 }
 
 def read():
@@ -89,16 +109,15 @@ def show_fourier_bounds():
             plt.figure(i) 
             amp = df[column]
             plt.title(f'{column} in {file}')
-            if file == 'data_m01_G90.mat': #debug
-                x = pairs_of_data_cutoff[file][column]
-                bl = x[0]#bounds left
-                br = x[1]
-                if True:
-                    t, v = coords_of_max_val_in_interval(df.t, amp, bl)
-                    plt.plot(t, v, 'ro')
-                if True:
-                    t, v = coords_of_max_val_in_interval(df.t, amp, br)
-                    plt.plot(t, v, 'bo') 
+            x = pairs_of_data_cutoff[file][column]
+            bl = x[0]#bounds left
+            br = x[1]
+            if True:
+                t, v = coords_of_max_val_in_interval(df.t, amp, bl)
+                plt.plot(t, v, 'ro')
+            if True:
+                t, v = coords_of_max_val_in_interval(df.t, amp, br)
+                plt.plot(t, v, 'bo') 
             plt.plot(df.t, amp)
             i += 1
 
@@ -186,7 +205,7 @@ def process_all_fourier_coefficients():
 
 
 def __main__():
-    #show_fourier_bounds()
-    process_all_fourier_coefficients()
+    show_fourier_bounds()
+    #process_all_fourier_coefficients()
 
 __main__()
