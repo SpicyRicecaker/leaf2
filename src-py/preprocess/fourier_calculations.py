@@ -75,7 +75,7 @@ def i_max_in_i_range(A, ia, ib):
 
 # exit()
 
-def coord_of_max_val_in_interval(X, Y, D):
+def coords_of_max_val_in_interval(X, Y, D):
     i =  i_max_in_i_range(Y, find_i(X, D[0]), find_i(X, D[1]))
     return X[i], Y[i]
 
@@ -94,10 +94,10 @@ def show_fourier_bounds():
                 bl = x[0]#bounds left
                 br = x[1]
                 if True:
-                    t, v = coord_of_max_val_in_interval(df.t, amp, bl)
+                    t, v = coords_of_max_val_in_interval(df.t, amp, bl)
                     plt.plot(t, v, 'ro')
                 if True:
-                    t, v = coord_of_max_val_in_interval(df.t, amp, br)
+                    t, v = coords_of_max_val_in_interval(df.t, amp, br)
                     plt.plot(t, v, 'bo') 
             plt.plot(df.t, amp)
             i += 1
@@ -131,15 +131,15 @@ def fourier_coefficients(dp, column, domain, N=10000):
     imag = 2 * sp.imag / N
 
     # fourier spectrum
-    #_ = plt.plot(freq, real, freq, imag)
-    #plt.show()
+    _ = plt.plot(freq, real, freq, imag)
+    plt.show()
 
     amp_nonzero = 0.01
     freq_nonzero = 0.01
     X = []
     f = []
     for i in range(len(freq)):
-        if freq[i] >= 0 and real[i] > amp_nonzero:
+        if freq[i] >= 0 and np.abs(real[i]) > amp_nonzero:
             double_counting = 1 if freq[i] >= freq_nonzero else 1 / 2
             X.append((real[i] + imag[i] * 1J) * double_counting)
             f.append(freq[i])
@@ -163,19 +163,30 @@ def fourier_coefficients(dp, column, domain, N=10000):
       "Initial phase (rad)": angles
     }
     df = pd.DataFrame(data)
-    key = 'ux'
-    df.to_csv(f'data/{dp.path.split(".")[0]}_fourier_transposed_{key}.csv')
+    df.to_csv(f'data/{dp.path.split(".")[0]}_fourier_transposed_{column}.csv')
     #df2.to_hdf('my_data.h5', key='df2', mode='a')
     plt.legend()
     plt.show()
 
+def process_all_fourier_coefficients():
+    for file in ["data_m01_G90.mat", "data_m05_G160.mat", "data_m10_G150.mat"]:
+        #debug
+        if file != "data_m01_G90.mat": continue
+        dp = DiscTransformPredictor(file, 0)
+        df = dp.df
+        
+        for column in ['uz']:
+            Y = df[column]
+            Ds = pairs_of_data_cutoff[file][column]
+            D1 = Ds[0]#bounds left
+            D2 = Ds[1]
+            d1, _ = coords_of_max_val_in_interval(df.t, Y, D1)
+            d2, _ = coords_of_max_val_in_interval(df.t, Y, D2)
+            fourier_coefficients(dp, column, domain=[d1, d2])
+
 
 def __main__():
-    dp = DiscTransformPredictor("data_m05_G160.mat", 0)
-    # print(df.columns, 0)
-    #for column in ['omy', 'ux', 'uz']:
-    #    fourier_coefficients(dp, column, domain=[14.2, 79.9])
-    show_fourier_bounds()
-
+    #show_fourier_bounds()
+    process_all_fourier_coefficients()
 
 __main__()
