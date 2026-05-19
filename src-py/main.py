@@ -14,6 +14,7 @@ import base64
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GL.shaders import compileShader, compileProgram
+from plyfile import PlyData
 try:
     from OpenGL.GL.NV.mesh_shader import glDrawMeshTasksNV
 except ImportError:
@@ -47,6 +48,21 @@ PLAYER_YAW        = -90.0
 LIGHT_DIR         = np.array([ 0.0, -1.0,  0.5], dtype=np.float32)
 LIGHT_COLOR       = np.array([ 1.0,  1.0,  1.0], dtype=np.float32)
 
+
+def load_ply(ply_path: str) -> tuple[int, int, int, int]:
+    with open(ply_path, 'rb') as f:
+        plydata = PlyData.read(f)
+        
+        points = np.stack(
+            (
+                plydata['vertex']['x'],
+                plydata['vertex']['y'],
+                plydata['vertex']['z']
+            ),
+            axis=1,
+            dtype=np.float32
+        )
+        return points
 
 def load_shader_source(path: str) -> str:
     here = os.path.dirname(os.path.abspath(__file__))
@@ -425,12 +441,7 @@ def main():
         u_leafTexture= glGetUniformLocation(program, "leafTexture")
     p1 = P1()
 
-    particle_positions = np.array([
-        [-0.5, 0.5, 0.0],
-        [0.5, 0.5, 0.0],
-        [-0.5, -0.5, 0.0],
-        [0.5, -0.5, 0.0]
-    ], dtype=np.float32)
+    particle_positions = load_ply(os.path.abspath("art/elm_point_cloud.ply"))
     particle_positions = np.pad(particle_positions, ((0, 0), (0, 1)))
     # --- mesh shader --
     particles_buffer = glGenBuffers(1)
@@ -483,8 +494,8 @@ def main():
     disc_transform_predictor_1 = DiscTransformPredictor(files[4-1], 1 / 60)
     i_x = 0
 
-    graph = RealtimeGraph(clock.get_time, disc_transform_predictor_1)
-    graph.start()
+    #graph = RealtimeGraph(clock.get_time, disc_transform_predictor_1)
+    #graph.start()
 
     running = True
     while running:
@@ -562,7 +573,7 @@ def main():
         glUniformMatrix4fv(p2.u_view,       1, GL_FALSE, view)
         glUniformMatrix4fv(p2.u_projection, 1, GL_FALSE, projection)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_buffer)        # Draw 4 mesh tasks (workgroups). Each workgroup handles 1 particle.
-        glDrawMeshTasksNV(0, 4)
+        glDrawMeshTasksNV(0, len(particle_positions))
         glBindVertexArray(0)
 
         i_x += 1
