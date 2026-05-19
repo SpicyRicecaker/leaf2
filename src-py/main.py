@@ -76,6 +76,20 @@ def build_program(vert_path: str, frag_path: str) -> int:
     vert     = shaders.compileShader(vert_src, GL_VERTEX_SHADER)
     frag     = shaders.compileShader(frag_src, GL_FRAGMENT_SHADER)
     program  = shaders.compileProgram(vert, frag)
+
+    success = glGetShaderiv(vert, GL_COMPILE_STATUS)
+    if not success:
+        log = glGetShaderInfoLog(vert)
+        print(f"Vert Shader Error: {log}")
+    success = glGetShaderiv(frag, GL_COMPILE_STATUS)
+    if not success:
+        log = glGetShaderInfoLog(frag)
+        print(f"Frag Shader Error: {log}")
+    linked = glGetProgramiv(program, GL_LINK_STATUS)
+    if not linked:
+        log = glGetProgramInfoLog(program)
+        print(f"Linker Error: {log}")
+    
     return int(program)
 
 # ---------------------------------------------------------------------------
@@ -402,8 +416,8 @@ def main():
     pygame.init()
     pygame.display.set_caption("Leaf")
 
-    pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
-    pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+    pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 4)
+    pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 6)
     pygame.display.gl_set_attribute(
         pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
     pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLEBUFFERS, 1)
@@ -420,7 +434,7 @@ def main():
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     # --- mesh shader --
-    class P1:
+    class ProgramTree:
         program = build_program("../shaders/leaf.vert", "../shaders/leaf.frag")
 
         # --- load FBX ---
@@ -439,7 +453,7 @@ def main():
         u_lightColor = glGetUniformLocation(program, "lightColor")
         u_viewPos    = glGetUniformLocation(program, "viewPos")
         u_leafTexture= glGetUniformLocation(program, "leafTexture")
-    p1 = P1()
+    p1 = ProgramTree()
 
     particle_positions = load_ply(os.path.abspath("art/elm_point_cloud.ply"))
     particle_positions = np.stack(
@@ -462,27 +476,41 @@ def main():
     )
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
-    class P2:
+    class ProgramLeaf:
         GL_MESH_SHADER_NV = 0x9559
         
         mesh_shader = glCreateShader(GL_MESH_SHADER_NV)
         glShaderSource(mesh_shader, load_shader_source("../shaders/a.mesh.glsl"))
         glCompileShader(mesh_shader)
 
-        frag_shader = compileShader(load_shader_source("../shaders/a.mesh.frag"), GL_FRAGMENT_SHADER)
+        success = glGetShaderiv(mesh_shader, GL_COMPILE_STATUS)
+        if not success:
+            log = glGetShaderInfoLog(mesh_shader)
+            print(f"Mesh Shader Error: {log}")
+
+        frag_shader = compileShader(load_shader_source("../shaders/leaf.frag"), GL_FRAGMENT_SHADER)
         program = glCreateProgram()
         glAttachShader(program, mesh_shader)
         glAttachShader(program, frag_shader)
         glLinkProgram(program)
 
+        linked = glGetProgramiv(program, GL_LINK_STATUS)
+        if not linked:
+            log = glGetProgramInfoLog(program)
+            print(f"Linker Error: {log}")
+
         u_view       = glGetUniformLocation(program, "view")
         u_projection = glGetUniformLocation(program, "projection")
+        u_lightDir   = glGetUniformLocation(program, "lightDir")
+        u_lightColor = glGetUniformLocation(program, "lightColor")
+        u_viewPos    = glGetUniformLocation(program, "viewPos")
+        u_leafTexture= glGetUniformLocation(program, "leafTexture")
 
         # Setup a dummy VAO (Mesh shaders don't require VBOs if data is fetched/generated inside)
         vao = glGenVertexArrays(1)
         glBindVertexArray(vao)
         # --- end mesh shader ---
-    p2 = P2()
+    p2 = ProgramLeaf()
 
     projection = pyrr.matrix44.create_perspective_projection_matrix(
         FOV_DEG, WIN_W / WIN_H, NEAR, FAR, dtype=np.float32)
@@ -501,6 +529,7 @@ def main():
     disc_transform_predictor_1 = DiscTransformPredictor(files[4-1], 1 / 60)
     i_x = 0
 
+    print('initial setup done')
     #graph = RealtimeGraph(clock.get_time, disc_transform_predictor_1)
     #graph.start()
 
@@ -553,7 +582,8 @@ def main():
         view  = camera.get_view_matrix()
 
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)  # added COLOR_BUFFER_BIT
-        glUseProgram(p1.program)
+        # region p1
+        glUseProgram(p1.program) #---------------------------------------------------------
 
         # bind texture to unit 0
         glActiveTexture(GL_TEXTURE0)
@@ -576,9 +606,19 @@ def main():
         glBindVertexArray(0)
 
         glBindVertexArray(p2.vao)
-        glUseProgram(p2.program)
+        # region p2
+        glUseProgram(p2.program) #---------------------------------------------------------
+        glActiveTexture(GL_TEXTURE0)
+
+        glBindTexture(GL_TEXTURE_2D, p2.tex_id_q)
+        glUniform1i(p2.u_leafTexture, 0)
+
         glUniformMatrix4fv(p2.u_view,       1, GL_FALSE, view)
         glUniformMatrix4fv(p2.u_projection, 1, GL_FALSE, projection)
+        glUniform3fv(p2.u_lightDir,   1, LIGHT_DIR)
+        glUniform3fv(p2.u_lightColor, 1, LIGHT_COLOR)
+        glUniform3fv(p2.u_viewPos,    1, camera.position.astype(np.float32))
+
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_buffer)        # Draw 4 mesh tasks (workgroups). Each workgroup handles 1 particle.
         glDrawMeshTasksNV(0, len(particle_positions))
         glBindVertexArray(0)
@@ -592,7 +632,7 @@ def main():
     glDeleteBuffers(1, [p1.ebo_l])
     glDeleteTextures(1, [p1.tex_id_l])
     glDeleteProgram(p1.program)
-    graph.stop()
+    #graph.stop()
     pygame.quit()
     sys.exit()
 

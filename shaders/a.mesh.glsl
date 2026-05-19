@@ -1,4 +1,4 @@
-#version 450
+#version 460
 #extension GL_NV_mesh_shader : require
 
 layout(local_size_x = 4) in;

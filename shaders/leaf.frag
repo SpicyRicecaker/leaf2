@@ -1,4 +1,4 @@
-#version 330 core
+#version 460
 
 in vec3 FragPos;
 in vec3 Normal;
@@ -48,4 +48,5 @@ void main()
 
     vec3 result = (ambient + diffuse + specular) * texColor.rgb;
     FragColor   = vec4(result, texColor.a);
+    // FragColor = vec4(1., 1., 1., 1.);
 }
