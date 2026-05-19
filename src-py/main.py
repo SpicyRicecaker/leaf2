@@ -26,6 +26,8 @@ from graph import RealtimeGraph
 from shared_clock import SharedClock
 from framebar import FrameBar
 from data_wrangler import DiscTransformPredictor
+from types import SimpleNamespace
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -55,6 +57,9 @@ mesh_shader_src = """
 layout(local_size_x = 4) in;
 layout(triangles, max_vertices = 4, max_primitives = 2) out;
 
+uniform mat4 view;
+uniform mat4 projection;
+
 // Simulated particle positions (4 particles)
 const vec3 positions[4] = vec3[](
     vec3(-0.5,  0.5, 0.0),
@@ -79,7 +84,8 @@ void main() {
     vec3 center = positions[particle_idx];
     
     // Expand the vertex out into a quad
-    gl_MeshVerticesNV[vertex_idx].gl_Position = vec4(center.xy + quad_offsets[vertex_idx], center.z, 1.0);
+    vec4 pre_project = vec4(center.xy + quad_offsets[vertex_idx], center.z, 1.0);
+    gl_MeshVerticesNV[vertex_idx].gl_Position = projection * view * pre_project;
 
     // Only thread 0 needs to define the topology (indices) for the 2 triangles
     if (vertex_idx == 0) {
@@ -462,46 +468,51 @@ def main():
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-    program = build_program("../shaders/leaf.vert", "../shaders/leaf.frag")
 
-    # --- load FBX ---
-    vao_l, vbo_l, ebo_l, index_count_l = load_glb_mesh("../art/american_elm.glb")  # <-- your fbx filename here
-    vao_q, vbo_q, ebo_q, index_count_q = load_quad()
+    class P1:
+        program = build_program("../shaders/leaf.vert", "../shaders/leaf.frag")
 
-    # --- load texture ---
-    tex_id_l = load_texture(os.path.abspath("art/american elm front flat.jpg"))  # <-- your path
-    tex_id_q = load_texture(os.path.abspath("art/transparent_star.png"))  # <-- your path
+        # --- load FBX ---
+        vao_l, vbo_l, ebo_l, index_count_l = load_glb_mesh("../art/american_elm.glb")  # <-- your fbx filename here
+        vao_q, vbo_q, ebo_q, index_count_q = load_quad()
 
-    # --- uniforms ---
-    u_model       = glGetUniformLocation(program, "model")
-    u_view        = glGetUniformLocation(program, "view")
-    u_projection  = glGetUniformLocation(program, "projection")
-    u_lightDir    = glGetUniformLocation(program, "lightDir")
-    u_lightColor  = glGetUniformLocation(program, "lightColor")
-    u_viewPos     = glGetUniformLocation(program, "viewPos")
-    u_leafTexture = glGetUniformLocation(program, "leafTexture")
+        # --- load texture ---
+        tex_id_l = load_texture(os.path.abspath("art/american elm front flat.jpg"))  # <-- your path
+        tex_id_q = load_texture(os.path.abspath("art/transparent_star.png"))  # <-- your path
+
+        # --- uniforms ---
+        u_model      = glGetUniformLocation(program, "model")
+        u_view       = glGetUniformLocation(program, "view")
+        u_projection = glGetUniformLocation(program, "projection")
+        u_lightDir   = glGetUniformLocation(program, "lightDir")
+        u_lightColor = glGetUniformLocation(program, "lightColor")
+        u_viewPos    = glGetUniformLocation(program, "viewPos")
+        u_leafTexture= glGetUniformLocation(program, "leafTexture")
+    p1 = P1()
 
     # --- mesh shader --
 
-    GL_MESH_SHADER_NV = 0x9559
-    
-    mesh_shader = glCreateShader(GL_MESH_SHADER_NV)
-    glShaderSource(mesh_shader, mesh_shader_src)
-    glCompileShader(mesh_shader)
-    if not glGetShaderiv(mesh_shader, GL_COMPILE_STATUS):
-        print(glGetShaderInfoLog(mesh_shader))
-        return
+    class P2:
+        GL_MESH_SHADER_NV = 0x9559
+        
+        mesh_shader = glCreateShader(GL_MESH_SHADER_NV)
+        glShaderSource(mesh_shader, mesh_shader_src)
+        glCompileShader(mesh_shader)
 
-    frag_shader = compileShader(fragment_shader_src, GL_FRAGMENT_SHADER)
-    mesh_shader_program = glCreateProgram()
-    glAttachShader(mesh_shader_program, mesh_shader)
-    glAttachShader(mesh_shader_program, frag_shader)
-    glLinkProgram(mesh_shader_program)
+        frag_shader = compileShader(fragment_shader_src, GL_FRAGMENT_SHADER)
+        program = glCreateProgram()
+        glAttachShader(program, mesh_shader)
+        glAttachShader(program, frag_shader)
+        glLinkProgram(program)
 
-    # Setup a dummy VAO (Mesh shaders don't require VBOs if data is fetched/generated inside)
-    vao_mesh_shader = glGenVertexArrays(1)
-    glBindVertexArray(vao_mesh_shader)
-    # --- end mesh shader ---
+        u_view       = glGetUniformLocation(program, "view")
+        u_projection = glGetUniformLocation(program, "projection")
+
+        # Setup a dummy VAO (Mesh shaders don't require VBOs if data is fetched/generated inside)
+        vao = glGenVertexArrays(1)
+        glBindVertexArray(vao)
+        # --- end mesh shader ---
+    p2 = P2()
 
 
     projection = pyrr.matrix44.create_perspective_projection_matrix(
@@ -511,8 +522,8 @@ def main():
 
     clock    = SharedClock()
     hwnd     = pygame.display.get_wm_info()["window"]
-    framebar = FrameBar(clock, hwnd)
-    framebar.start()
+    #framebar = FrameBar(clock, hwnd)
+    #framebar.start()
 
     mouse_captured = False
     clock_obj      = pygame.time.Clock()
@@ -573,30 +584,32 @@ def main():
         view  = camera.get_view_matrix()
 
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)  # added COLOR_BUFFER_BIT
-        glUseProgram(program)
+        glUseProgram(p1.program)
 
         # bind texture to unit 0
         glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, tex_id_q)
-        glUniform1i(u_leafTexture, 0)
+        glBindTexture(GL_TEXTURE_2D, p1.tex_id_q)
+        glUniform1i(p1.u_leafTexture, 0)
 
-        glUniformMatrix4fv(u_model,      1, GL_FALSE, model)
-        glUniformMatrix4fv(u_view,       1, GL_FALSE, view)
-        glUniformMatrix4fv(u_projection, 1, GL_FALSE, projection)
-        glUniform3fv(u_lightDir,   1, LIGHT_DIR)
-        glUniform3fv(u_lightColor, 1, LIGHT_COLOR)
-        glUniform3fv(u_viewPos,    1, camera.position.astype(np.float32))
+        glUniformMatrix4fv(p1.u_model,      1, GL_FALSE, model)
+        glUniformMatrix4fv(p1.u_view,       1, GL_FALSE, view)
+        glUniformMatrix4fv(p1.u_projection, 1, GL_FALSE, projection)
+        glUniform3fv(p1.u_lightDir,   1, LIGHT_DIR)
+        glUniform3fv(p1.u_lightColor, 1, LIGHT_COLOR)
+        glUniform3fv(p1.u_viewPos,    1, camera.position.astype(np.float32))
 
         # glBindVertexArray(vao_l)
         # glDrawElements(GL_TRIANGLES, index_count_l, GL_UNSIGNED_INT, None)
         # glBindVertexArray(0)
 
-        glBindVertexArray(vao_q)
-        glDrawElementsInstanced(GL_TRIANGLES, index_count_q, GL_UNSIGNED_INT, None, 1)
+        glBindVertexArray(p1.vao_q)
+        glDrawElementsInstanced(GL_TRIANGLES, p1.index_count_q, GL_UNSIGNED_INT, None, 1)
         glBindVertexArray(0)
 
-        glBindVertexArray(vao_mesh_shader)
-        glUseProgram(mesh_shader_program)
+        glBindVertexArray(p2.vao)
+        glUseProgram(p2.program)
+        glUniformMatrix4fv(p2.u_view,       1, GL_FALSE, view)
+        glUniformMatrix4fv(p2.u_projection, 1, GL_FALSE, projection)
         glDrawMeshTasksNV(0, 4)
         glBindVertexArray(0)
 
@@ -604,11 +617,11 @@ def main():
 
         pygame.display.flip()
 
-    glDeleteVertexArrays(1, [vao_l])
-    glDeleteBuffers(1, [vbo_l])
-    glDeleteBuffers(1, [ebo_l])
-    glDeleteTextures(1, [tex_id_l])
-    glDeleteProgram(program)
+    glDeleteVertexArrays(1, [p1.vao_l])
+    glDeleteBuffers(1, [p1.vbo_l])
+    glDeleteBuffers(1, [p1.ebo_l])
+    glDeleteTextures(1, [p1.tex_id_l])
+    glDeleteProgram(p1.program)
     graph.stop()
     pygame.quit()
     sys.exit()
