@@ -50,6 +50,10 @@ layout(binding = 1, std430) buffer ssbo1 {
 layout(binding = 2, std430) buffer ssbo2 {
     Sinusoid m01_G90_uz[];
 };
+
+layout(binding = 3, std430) buffer ssbo3 {
+    Sinusoid m01_G90_omy[];
+};
 // --------------------
 // |       |          |
 // |       |          |
@@ -94,6 +98,14 @@ float eval_m01_G90_uz(float t) {
     }
     return sum;
 };
+
+float eval_m01_G90_omy(float t) {
+    float sum = 0;
+    for (int i = 0; i < m01_G90_omy.length(); i++) {
+        sum += m01_G90_omy[i].amp * cos(2. * PI * m01_G90_omy[i].freq * t + m01_G90_omy[i].phase);
+    }
+    return sum;
+};
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 // mat2 rotate2d(float _angle){
@@ -104,6 +116,12 @@ vec3 rot_over_x_axis_by_90_cw(vec3 v) {
     return mat3( 1., 0., 0.,
                  0., 0., 1.,
                  0.,-1., 0.) * v;
+}
+
+mat3 rotate_over_z_axis_by_angle(float a) {
+    return mat3( cos(a), -sin(a), 0.,
+                 sin(a),  cos(a), 0.,
+                 0.,               0.,              1.);
 }
 
 void main() {
@@ -120,7 +138,7 @@ void main() {
     vec3 center = positions[particle_idx].xyz;
     
     // Expand the vertex out into a quad
-    vec4 pre_project = vec4(center + rot_over_x_axis_by_90_cw(vec3(quad_offsets[vertex_idx], 1.)), 1.);
+    vec4 pre_project = vec4(center + rot_over_x_axis_by_90_cw(vec3(quad_offsets[vertex_idx], 1.)) * rotate_over_z_axis_by_angle(eval_m01_G90_omy(t)), 1.);
     gl_MeshVerticesNV[vertex_idx].gl_Position = projection * view * pre_project;
     
     FragPos[vertex_idx] = pre_project.xyz; 

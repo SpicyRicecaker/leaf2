@@ -492,7 +492,7 @@ def main():
 
     file = 'data_m01_G90'
 
-    for column in ['ux', 'uz']:
+    for column in ['ux', 'uz', 'omy']:
         temp = get_freq_amp_phase(file, column)
         arr = np.stack(
             (temp["Frequency (Hz)"],
@@ -580,6 +580,7 @@ def main():
     #graph.start()
 
     running = True
+    paused = False
     while running:
 
         dt = clock_obj.tick(60) / 1000.0
@@ -602,8 +603,9 @@ def main():
                         pygame.mouse.set_visible(True)
                         pygame.event.set_grab(False)
 
-                # elif event.key == K_SPACE:
-                #     clock.toggle_pause()
+                elif event.key == K_p:
+                    paused = not paused
+                    # clock.toggle_pause()
 
                 # elif event.key == K_RIGHT:
                 #     clock.step_frames(1)
@@ -664,8 +666,13 @@ def main():
         glUniform3fv(p2.u_lightDir,   1, LIGHT_DIR)
         glUniform3fv(p2.u_lightColor, 1, LIGHT_COLOR)
         glUniform3fv(p2.u_viewPos,    1, camera.position.astype(np.float32))
-        glUniform1f(p2.u_t, t)
-        glUniform1f(p2.u_dt, dt)
+
+        if not paused:
+            glUniform1f(p2.u_t, t)
+            glUniform1f(p2.u_dt, dt)
+        else:
+            glUniform1f(p2.u_dt, 0)
+
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_buffer)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m01_G90_buffers[0])
