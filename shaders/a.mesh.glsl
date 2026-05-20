@@ -39,8 +39,13 @@ struct Sinusoid {
     float phase;
 };
 
+struct Leaf {
+    vec3 position;
+    float phi;
+};
+
 layout(binding = 0, std430) buffer ssbo0 {
-    vec4 positions[];
+    Leaf leaves[];
 };
 
 layout(binding = 1, std430) buffer ssbo1 {
@@ -130,15 +135,16 @@ void main() {
 
     // r(t) = r(t-dt) + v(t-dt)dt
     for (int i = 0; i < NUM_STEPS_PER_DT; i++) {
-        positions[particle_idx].x += eval_m01_G90_ux(t - dt) * dt;
-        positions[particle_idx].y += eval_m01_G90_uz(t - dt) * dt;
+        leaves[particle_idx].position.x += eval_m01_G90_ux(t - dt) * dt;
+        leaves[particle_idx].position.y += eval_m01_G90_uz(t - dt) * dt;
+        leaves[particle_idx].phi += eval_m01_G90_omy(t - dt) * dt;
     }
 
     // Determine the base position of this particle
-    vec3 center = positions[particle_idx].xyz;
+    vec3 center = leaves[particle_idx].position.xyz;
     
     // Expand the vertex out into a quad
-    vec4 pre_project = vec4(center + rot_over_x_axis_by_90_cw(vec3(quad_offsets[vertex_idx], 1.)) * rotate_over_z_axis_by_angle(eval_m01_G90_omy(t)), 1.);
+    vec4 pre_project = vec4(center + rot_over_x_axis_by_90_cw(vec3(quad_offsets[vertex_idx], 0.)) * rotate_over_z_axis_by_angle(leaves[particle_idx].phi), 1.);
     gl_MeshVerticesNV[vertex_idx].gl_Position = projection * view * pre_project;
     
     FragPos[vertex_idx] = pre_project.xyz; 

@@ -667,18 +667,20 @@ def main():
         glUniform3fv(p2.u_lightColor, 1, LIGHT_COLOR)
         glUniform3fv(p2.u_viewPos,    1, camera.position.astype(np.float32))
 
-        if not paused:
-            glUniform1f(p2.u_t, t)
-            glUniform1f(p2.u_dt, dt)
-        else:
-            glUniform1f(p2.u_dt, 0)
+        glUniform1f(p2.u_t, t)
+        glUniform1f(p2.u_dt, dt if not paused else 0)
 
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_buffer)
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m01_G90_buffers[0])
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m01_G90_buffers[1])
+
+        base = 1
+        for i in range(len(m01_G90_buffers)):
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, base + i, m01_G90_buffers[i])
+
         glDrawMeshTasksNV(0, len(particle_positions))
         glBindVertexArray(0)
+
+        #b = inspect_buffer(m01_G90_buffers[2], m01_G90_arrays[2])
 
         i_x += 1
 
