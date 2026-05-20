@@ -10,6 +10,7 @@ out vec2[] TexCoord;
 
 uniform mat4 view;
 uniform mat4 projection;
+uniform float t;
 
 // assuming 1 unit is 1 meter
 const float H = 0.13970;
@@ -65,7 +66,7 @@ void main() {
     uint vertex_idx = gl_LocalInvocationID.x;
 
     // Determine the base position of this particle
-    vec3 center = positions[particle_idx].xyz;
+    vec3 center = positions[particle_idx].xyz * t;
     
     // Expand the vertex out into a quad
     vec4 pre_project = vec4(center.xy + quad_offsets[vertex_idx], center.z, 1.0);

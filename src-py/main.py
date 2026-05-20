@@ -47,6 +47,7 @@ PLAYER_YAW        = -90.0
 
 LIGHT_DIR         = np.array([ 0.0, -1.0,  0.5], dtype=np.float32)
 LIGHT_COLOR       = np.array([ 1.0,  1.0,  1.0], dtype=np.float32)
+MAX_COEFFICIENTS  = 10
 
 
 def load_ply(ply_path: str) -> tuple[int, int, int, int]:
@@ -433,7 +434,8 @@ def main():
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-    # --- mesh shader --
+    # region TRUNK
+    # --- trunk --
     class ProgramTree:
         program = build_program("../shaders/leaf.vert", "../shaders/leaf.frag")
 
@@ -464,7 +466,6 @@ def main():
         dtype=np.float32
     )
     particle_positions = np.pad(particle_positions, ((0, 0), (0, 1)))
-    # --- mesh shader --
     particles_buffer = glGenBuffers(1)
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_buffer)
     glBufferData(
@@ -475,7 +476,9 @@ def main():
         GL_DYNAMIC_DRAW #change to static copy
     )
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
-
+    
+    # region Leaf
+    # --- leaf --
     class ProgramLeaf:
         GL_MESH_SHADER_NV = 0x9559
         
@@ -505,6 +508,7 @@ def main():
         u_lightColor = glGetUniformLocation(program, "lightColor")
         u_viewPos    = glGetUniformLocation(program, "viewPos")
         u_leafTexture= glGetUniformLocation(program, "leafTexture")
+        u_t          = glGetUniformLocation(program, "t")
 
         # Setup a dummy VAO (Mesh shaders don't require VBOs if data is fetched/generated inside)
         vao = glGenVertexArrays(1)
@@ -583,31 +587,31 @@ def main():
 
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)  # added COLOR_BUFFER_BIT
         # region p1
-        glUseProgram(p1.program) #---------------------------------------------------------
+        # glUseProgram(p1.program) #---------------------------------------------------------
 
-        # bind texture to unit 0
-        glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, p1.tex_id_q)
-        glUniform1i(p1.u_leafTexture, 0)
+        # # bind texture to unit 0
+        # glActiveTexture(GL_TEXTURE0)
+        # glBindTexture(GL_TEXTURE_2D, p1.tex_id_q)
+        # glUniform1i(p1.u_leafTexture, 0)
 
-        glUniformMatrix4fv(p1.u_model,      1, GL_FALSE, model)
-        glUniformMatrix4fv(p1.u_view,       1, GL_FALSE, view)
-        glUniformMatrix4fv(p1.u_projection, 1, GL_FALSE, projection)
-        glUniform3fv(p1.u_lightDir,   1, LIGHT_DIR)
-        glUniform3fv(p1.u_lightColor, 1, LIGHT_COLOR)
-        glUniform3fv(p1.u_viewPos,    1, camera.position.astype(np.float32))
+        # glUniformMatrix4fv(p1.u_model,      1, GL_FALSE, model)
+        # glUniformMatrix4fv(p1.u_view,       1, GL_FALSE, view)
+        # glUniformMatrix4fv(p1.u_projection, 1, GL_FALSE, projection)
+        # glUniform3fv(p1.u_lightDir,   1, LIGHT_DIR)
+        # glUniform3fv(p1.u_lightColor, 1, LIGHT_COLOR)
+        # glUniform3fv(p1.u_viewPos,    1, camera.position.astype(np.float32))
 
-        # glBindVertexArray(vao_l)
-        # glDrawElements(GL_TRIANGLES, index_count_l, GL_UNSIGNED_INT, None)
+        # # glBindVertexArray(vao_l)
+        # # glDrawElements(GL_TRIANGLES, index_count_l, GL_UNSIGNED_INT, None)
+        # # glBindVertexArray(0)
+
+        # glBindVertexArray(p1.vao_q)
+        # glDrawElementsInstanced(GL_TRIANGLES, p1.index_count_q, GL_UNSIGNED_INT, None, 1)
         # glBindVertexArray(0)
 
-        glBindVertexArray(p1.vao_q)
-        glDrawElementsInstanced(GL_TRIANGLES, p1.index_count_q, GL_UNSIGNED_INT, None, 1)
-        glBindVertexArray(0)
-
-        glBindVertexArray(p2.vao)
         # region p2
         glUseProgram(p2.program) #---------------------------------------------------------
+        glBindVertexArray(p2.vao)
         glActiveTexture(GL_TEXTURE0)
 
         glBindTexture(GL_TEXTURE_2D, p1.tex_id_l)
@@ -618,6 +622,7 @@ def main():
         glUniform3fv(p2.u_lightDir,   1, LIGHT_DIR)
         glUniform3fv(p2.u_lightColor, 1, LIGHT_COLOR)
         glUniform3fv(p2.u_viewPos,    1, camera.position.astype(np.float32))
+        glUniform1f(p2.u_t, t)
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_buffer)        # Draw 4 mesh tasks (workgroups). Each workgroup handles 1 particle.
         glDrawMeshTasksNV(0, len(particle_positions))
