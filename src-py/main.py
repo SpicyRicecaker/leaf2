@@ -513,6 +513,7 @@ def main():
         u_viewPos    = glGetUniformLocation(program, "viewPos")
         u_leafTexture= glGetUniformLocation(program, "leafTexture")
         u_t          = glGetUniformLocation(program, "t")
+        u_dt         = glGetUniformLocation(program, "dt")
 
         # Setup a dummy VAO (Mesh shaders don't require VBOs if data is fetched/generated inside)
         vao = glGenVertexArrays(1)
@@ -627,6 +628,7 @@ def main():
         glUniform3fv(p2.u_lightColor, 1, LIGHT_COLOR)
         glUniform3fv(p2.u_viewPos,    1, camera.position.astype(np.float32))
         glUniform1f(p2.u_t, t)
+        glUniform1f(p2.u_dt, dt)
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_buffer)        # Draw 4 mesh tasks (workgroups). Each workgroup handles 1 particle.
         glDrawMeshTasksNV(0, len(particle_positions))

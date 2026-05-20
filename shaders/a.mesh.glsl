@@ -11,6 +11,7 @@ out vec2[] TexCoord;
 uniform mat4 view;
 uniform mat4 projection;
 uniform float t;
+uniform float dt;
 
 // assuming 1 unit is 1 meter
 const float H = 0.13970;
@@ -28,9 +29,18 @@ const float R = 0.688375080283 * W;
 //     vec3(-0.5, -0.5, 0.0),
 //     vec3( 0.5, -0.5, 0.0)
 // );
+struct Sinusoid {
+    float amp;
+    float frequency;
+    float phase;
+};
 
-layout(binding = 0, std430) readonly buffer ssbo0 {
+layout(binding = 0, std430) buffer ssbo0 {
     vec4 positions[];
+};
+
+layout(binding = 1, std430) buffer ssbo1 {
+    Sinusoid m01_G90_ux[];
 };
 
 // --------------------
