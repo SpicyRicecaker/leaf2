@@ -28,7 +28,7 @@ from ui.shared_clock import SharedClock
 from ui.framebar import FrameBar
 from data_wrangler import DiscTransformPredictor
 from types import SimpleNamespace
-
+import pandas as pd
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -92,6 +92,10 @@ def build_program(vert_path: str, frag_path: str) -> int:
         print(f"Linker Error: {log}")
     
     return int(program)
+
+def get_freq_amp_phase(file='data_m01_G90', column='ux'):
+    df = pd.read_csv(f'data/{file}_fourier_transposed_{column}.csv')
+    return df
 
 # ---------------------------------------------------------------------------
 # FBX loader  (replaces build_leaf_vbo)

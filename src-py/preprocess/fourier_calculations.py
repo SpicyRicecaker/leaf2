@@ -163,11 +163,11 @@ def fourier_coefficients(dp, column, domain, N=10000):
             X.append((real[i] + imag[i] * 1J) * double_counting)
             f.append(freq[i])
     f = np.array(f)
-    #plt.plot(ts, uxs, label="dataset")
+    plt.plot(ts, uxs, label="dataset")
     print(f'f {f}')
 
 
-    amplitudes = np.array([np.sqrt(X[i] * X[i].conjugate()) for i in range(len(X))])
+    amplitudes = np.array([np.sqrt(X[i] * X[i].conjugate()) for i in range(len(X))], dtype=np.float32)
     print(f'amplitudes {amplitudes}')
     angles = np.array([np.atan2(X[i].imag, X[i].real) for i in range(len(X))])
     plt.plot(
@@ -194,7 +194,7 @@ def process_all_fourier_coefficients():
         dp = DiscTransformPredictor(file, 0)
         df = dp.df
         
-        for column in ['ux']:
+        for column in ['ux', 'uz', 'omy']:
             Y = df[column]
             Ds = pairs_of_data_cutoff[file][column]
             D1 = Ds[0]#bounds left
