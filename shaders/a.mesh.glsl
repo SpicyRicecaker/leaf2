@@ -96,6 +96,15 @@ float eval_m01_G90_uz(float t) {
 };
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+// mat2 rotate2d(float _angle){
+
+// }
+
+vec3 rot_over_x_axis_by_90_cw(vec3 v) {
+    return mat3( 1., 0., 0.,
+                 0., 0., 1.,
+                 0.,-1., 0.) * v;
+}
 
 void main() {
     uint particle_idx = gl_WorkGroupID.x;
@@ -111,11 +120,11 @@ void main() {
     vec3 center = positions[particle_idx].xyz;
     
     // Expand the vertex out into a quad
-    vec4 pre_project = vec4(center.xy + quad_offsets[vertex_idx], center.z, 1.0);
+    vec4 pre_project = vec4(center + rot_over_x_axis_by_90_cw(vec3(quad_offsets[vertex_idx], 1.)), 1.);
     gl_MeshVerticesNV[vertex_idx].gl_Position = projection * view * pre_project;
     
     FragPos[vertex_idx] = pre_project.xyz; 
-    Normal[vertex_idx] = vec3(0, 0, 1);
+    Normal[vertex_idx] = rot_over_x_axis_by_90_cw(vec3(0, 0, 1));
     TexCoord[vertex_idx] = tex_coords[vertex_idx];
 
     // Only thread 0 needs to define the topology (indices) for the 2 triangles
