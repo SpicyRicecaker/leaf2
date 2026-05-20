@@ -94,7 +94,7 @@ def build_program(vert_path: str, frag_path: str) -> int:
     
     return int(program)
 
-def get_freq_amp_phase(file='data_m01_G90', column='ux'):
+def get_freq_amp_phase(file, column):
     df = pd.read_csv(f'data/{file}_fourier_transposed_{column}.csv')
     return df
 
@@ -486,28 +486,37 @@ def main():
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
     # -------
 
-    temp = get_freq_amp_phase()
-    m01_G90_ux = np.stack(
-        (temp["Frequency (Hz)"],
-         temp["Amplitude (unit)"],
-         temp["Initial phase (rad)"]),
-         axis=1,
-         dtype=np.float32)
-    
-    m01_G90_ux_buffer = glGenBuffers(1)
+    # vvvvvvvvvvvvvvvvv[begin m01_G90_ux]vvvvvvvvvvvvvvvvv
+    m01_G90_arrays = []
+    m01_G90_buffers = []
 
-    # -------
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m01_G90_ux_buffer)
-    glBufferData(
-        GL_SHADER_STORAGE_BUFFER,
-        # float is 4 bytes, 4 floats is 16 bytes, 16 bytes * length
-        m01_G90_ux.nbytes,
-        m01_G90_ux.data,
-        GL_DYNAMIC_DRAW #change to static copy
-    )
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
-    # -------
+    file = 'data_m01_G90'
+
+    for column in ['ux', 'uz']:
+        temp = get_freq_amp_phase(file, column)
+        arr = np.stack(
+            (temp["Frequency (Hz)"],
+            temp["Amplitude (unit)"],
+            temp["Initial phase (rad)"]),
+            axis=1,
+            dtype=np.float32)
+        
+        buffer = glGenBuffers(1)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer)
+        glBufferData(
+            GL_SHADER_STORAGE_BUFFER,
+            # float is 4 bytes, 4 floats is 16 bytes, 16 bytes * length
+            arr.nbytes,
+            arr.data,
+            GL_DYNAMIC_DRAW #change to static copy
+        )
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
+
+        m01_G90_arrays.append(arr)
+        m01_G90_buffers.append(buffer)
+        
+    # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     # region Leaf
     # --- leaf --
@@ -659,7 +668,8 @@ def main():
         glUniform1f(p2.u_dt, dt)
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_buffer)
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m01_G90_ux_buffer)
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m01_G90_buffers[0])
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m01_G90_buffers[1])
         glDrawMeshTasksNV(0, len(particle_positions))
         glBindVertexArray(0)
 

@@ -47,6 +47,9 @@ layout(binding = 1, std430) buffer ssbo1 {
     Sinusoid m01_G90_ux[];
 };
 
+layout(binding = 2, std430) buffer ssbo2 {
+    Sinusoid m01_G90_uz[];
+};
 // --------------------
 // |       |          |
 // |       |          |
@@ -75,6 +78,7 @@ const vec2 tex_coords[4] = vec2[](
     vec2(1., 0.)
 );
 
+// vvvvvvvvvvvvvvvvv[begin m01_G90_ux]vvvvvvvvvvvvvvvvv
 float eval_m01_G90_ux(float t) {
     float sum = 0;
     for (int i = 0; i < m01_G90_ux.length(); i++) {
@@ -83,6 +87,16 @@ float eval_m01_G90_ux(float t) {
     return sum;
 };
 
+float eval_m01_G90_uz(float t) {
+    float sum = 0;
+    for (int i = 0; i < m01_G90_uz.length(); i++) {
+        sum += m01_G90_uz[i].amp * cos(2. * PI * m01_G90_uz[i].freq * t + m01_G90_uz[i].phase);
+    }
+    return sum;
+};
+// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 void main() {
     uint particle_idx = gl_WorkGroupID.x;
     uint vertex_idx = gl_LocalInvocationID.x;
@@ -90,6 +104,7 @@ void main() {
     // r(t) = r(t-dt) + v(t-dt)dt
     for (int i = 0; i < NUM_STEPS_PER_DT; i++) {
         positions[particle_idx].x += eval_m01_G90_ux(t - dt) * dt;
+        positions[particle_idx].y += eval_m01_G90_uz(t - dt) * dt;
     }
 
     // Determine the base position of this particle
