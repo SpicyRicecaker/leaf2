@@ -10,6 +10,7 @@ import numpy as np
 import pyrr
 import pygltflib
 import base64
+from functools import reduce
 
 from OpenGL.GL import *
 from OpenGL.GL import shaders
@@ -661,6 +662,11 @@ def main():
         glDrawMeshTasksNV(0, len(particle_positions))
         glBindVertexArray(0)
 
+        # inspect buffer
+        b = inspect_buffer(m01_G90_ux_buffer, m01_G90_ux)
+        print(b)
+        exit()
+
         i_x += 1
 
         pygame.display.flip()
@@ -673,6 +679,17 @@ def main():
     #graph.stop()
     pygame.quit()
     sys.exit()
+
+def inspect_buffer(buffer, template_np_array):
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer)
+    ptr = glMapBufferRange(
+        GL_SHADER_STORAGE_BUFFER, 0, template_np_array.nbytes, GL_MAP_READ_BIT
+    )
+    arr = np.frombuffer(
+        (ctypes.c_float * reduce(lambda acc, x: acc * int(x), template_np_array.shape)).from_address(ptr), dtype=np.float32
+    )
+    return arr
 
 
 if __name__ == "__main__":

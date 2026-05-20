@@ -1,5 +1,6 @@
 #version 460
 #extension GL_NV_mesh_shader : require
+#extension GL_EXT_debug_printf : enable
 
 #define PI 3.1415926538
 
