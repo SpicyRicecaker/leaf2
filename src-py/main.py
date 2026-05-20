@@ -491,7 +491,8 @@ def main():
         (temp["Frequency (Hz)"],
          temp["Amplitude (unit)"],
          temp["Initial phase (rad)"]),
-         axis=1)
+         axis=1,
+         dtype=np.float32)
     
     m01_G90_ux_buffer = glGenBuffers(1)
 
@@ -592,17 +593,17 @@ def main():
                         pygame.mouse.set_visible(True)
                         pygame.event.set_grab(False)
 
-                elif event.key == K_SPACE:
-                    clock.toggle_pause()
+                # elif event.key == K_SPACE:
+                #     clock.toggle_pause()
 
-                elif event.key == K_RIGHT:
-                    clock.step_frames(1)
+                # elif event.key == K_RIGHT:
+                #     clock.step_frames(1)
 
-                elif event.key == K_LEFT:
-                    clock.step_frames(-1)
+                # elif event.key == K_LEFT:
+                #     clock.step_frames(-1)
 
-                elif event.key == K_r:
-                    clock.reset()
+                # elif event.key == K_r:
+                #     clock.reset()
 
             elif event.type == MOUSEMOTION and mouse_captured:
                 dx, dy = event.rel
@@ -661,11 +662,6 @@ def main():
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m01_G90_ux_buffer)
         glDrawMeshTasksNV(0, len(particle_positions))
         glBindVertexArray(0)
-
-        # inspect buffer
-        b = inspect_buffer(m01_G90_ux_buffer, m01_G90_ux)
-        print(b)
-        exit()
 
         i_x += 1
 
