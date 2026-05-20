@@ -470,6 +470,8 @@ def main():
         dtype=np.float32
     )
     particle_positions = np.pad(particle_positions, ((0, 0), (0, 1)))
+
+    # -------
     particles_buffer = glGenBuffers(1)
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_buffer)
     glBufferData(
@@ -480,7 +482,31 @@ def main():
         GL_DYNAMIC_DRAW #change to static copy
     )
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
+    # -------
+
+    temp = get_freq_amp_phase()
+    m01_G90_ux = np.stack(
+        (temp["Frequency (Hz)"],
+         temp["Amplitude (unit)"],
+         temp["Initial phase (rad)"]),
+         axis=1)
     
+    m01_G90_ux_buffer = glGenBuffers(1)
+
+    # -------
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m01_G90_ux_buffer)
+    glBufferData(
+        GL_SHADER_STORAGE_BUFFER,
+        # float is 4 bytes, 4 floats is 16 bytes, 16 bytes * length
+        m01_G90_ux.nbytes,
+        m01_G90_ux.data,
+        GL_DYNAMIC_DRAW #change to static copy
+    )
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
+    # -------
+
     # region Leaf
     # --- leaf --
     class ProgramLeaf:
@@ -630,7 +656,8 @@ def main():
         glUniform1f(p2.u_t, t)
         glUniform1f(p2.u_dt, dt)
 
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_buffer)        # Draw 4 mesh tasks (workgroups). Each workgroup handles 1 particle.
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_buffer)
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m01_G90_ux_buffer)
         glDrawMeshTasksNV(0, len(particle_positions))
         glBindVertexArray(0)
 

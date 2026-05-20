@@ -172,7 +172,7 @@ def fourier_coefficients(dp, column, domain, N=10000):
     angles = np.array([np.atan2(X[i].imag, X[i].real) for i in range(len(X))])
     plt.plot(
         ts,
-        sum([amplitudes[i] * np.cos(f[i] * 2 * np.pi * (ts - domain[0]) + angles[i])for i in range(len(amplitudes))]),
+        sum([amplitudes[i] * np.cos(f[i] * 2 * np.pi * (ts - domain[0]) + angles[i]) for i in range(len(amplitudes))]),
         label='distilled'
     )
 
